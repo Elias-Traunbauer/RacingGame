@@ -75,10 +75,10 @@ namespace RacingGame
 
                         Vector2[] points = new Vector2[]
                         {
-                            centerPointOfLastPoint + normal * 10,
-                            centerPointOfLastPoint - normal * 10,
-                            centerPointOfCurrentPoint - normal * 10,
-                            centerPointOfCurrentPoint + normal * 10
+                            centerPointOfLastPoint + normal * 5,
+                            centerPointOfLastPoint - normal * 5,
+                            centerPointOfCurrentPoint - normal * 5,
+                            centerPointOfCurrentPoint + normal * 5
                         };
 
                         g.FillPolygon(Brushes.Gray, points.Select(x => new PointF(x.X, x.Y)).ToArray());
