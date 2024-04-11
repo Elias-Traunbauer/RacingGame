@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -14,7 +15,13 @@ namespace GameLogic
         public GameAgent()
         {
             Id = Guid.NewGuid();
+
+            // assign random color
+            Random random = new Random();
+            Color = Color.FromArgb(random.Next(0, 255), random.Next(0, 255), random.Next(0, 255));
         }
+
+        public Color Color { get; set; } = Color.Red;
 
         public bool ForwardControl { get; set; }
         public bool BackwardControl { get; set; }

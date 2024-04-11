@@ -31,7 +31,7 @@ namespace RacingGame
             GameController.AddAgent(GameAgent);
         }
 
-        public void Render()
+        public async Task Render()
         {
             try
             {
@@ -197,14 +197,17 @@ namespace RacingGame
                         g.FillPolygon(Brushes.Black, copyWheels.Select(x => new PointF(x.X, x.Y)).ToArray());
                     }
 
-                    g.FillPolygon(Brushes.Red, carPoints.Select(x => new PointF(x.X, x.Y)).ToArray());
+                    g.FillPolygon(new SolidBrush(agent.Color), carPoints.Select(x => new PointF(x.X, x.Y)).ToArray()) ;
 
                 }
 
-                g.Dispose();
-                renderSemaphore.WaitOne();
-                pb.Image?.Dispose();
-                pb.Image = bitmap;
+                Invoke(new MethodInvoker(() =>
+                {
+                    g.Dispose();
+                    pb.Image?.Dispose();
+                    pb.Image = bitmap;
+                    renderSemaphore.Release();
+                }));
             }
             catch (Exception ex)
             {
@@ -214,7 +217,7 @@ namespace RacingGame
             }
             finally
             {
-                renderSemaphore.Release();
+                
             }
         }
         Semaphore renderSemaphore = new Semaphore(1, 1);
@@ -230,7 +233,10 @@ namespace RacingGame
                 CameraPosition = Vector2.Lerp(CameraPosition, GameAgent.Position, 0.1f);
                 try
                 {
-                    Invoke(new MethodInvoker(Render));
+                    renderSemaphore.WaitOne();
+                    Render();
+                    renderSemaphore.WaitOne();
+                    renderSemaphore.Release();
                     //Render();
                 }
                 catch (Exception)
