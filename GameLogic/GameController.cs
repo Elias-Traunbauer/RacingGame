@@ -37,9 +37,34 @@ namespace GameLogic
 
         public void Update(float deltaTime)
         {
+            float minDistance = 100;
             foreach (GameAgent agent in Agents)
             {
                 agent.Update(deltaTime);
+
+                Vector2 agentDirection = new Vector2((float)Math.Cos(agent.Rotation), (float)Math.Sin(agent.Rotation));
+                Vector2 agentDirectionNormal = new Vector2(agentDirection.Y, -agentDirection.X);
+                Vector2 agentDirectionNormalOther = new Vector2(-agentDirection.Y, agentDirection.X);
+
+                Vector2 agentFront = agent.Position + agentDirection * agent.FrontCarPosition.Y;
+
+                bool hitRight = Raycast(agentFront, agentDirectionNormal, out float distanceRight);
+                bool hitLeft = Raycast(agentFront, agentDirectionNormalOther, out float distanceLeft);
+
+                if (hitRight && distanceRight < minDistance)
+                {
+                    //agent.Reset();
+                }
+
+                if (hitLeft && distanceLeft < minDistance)
+                {
+                    //agent.Reset();
+                }
+
+                if (!hitLeft || !hitRight)
+                {
+                    //agent.Reset();
+                }
             }
         }
 
@@ -78,6 +103,101 @@ namespace GameLogic
                 pointBeforeLastPoint = Track.Last();
                 lastPoint = newPoint;
             }
+        }
+
+        public Vector2[] TrackWithResolutionModifier(int resolutionModifier)
+        {
+            Vector2[] track = Track.ToArray();
+            HashSet<Vector2> trackPoints = new HashSet<Vector2>();
+
+            for (int i = 0; i < track.Length; i++)
+            {
+                if (i % resolutionModifier == 0)
+                {
+                    trackPoints.Add(track[i]);
+                }
+            }
+
+            return trackPoints.ToArray();
+        }
+
+        public Vector2[] TrackWithResolutionModifierAndDistance(int resolutionModifier, float maxDistance, Vector2 origin)
+        {
+            Vector2[] track = Track.Where(x => Vector2.Distance(origin, x) < maxDistance).ToArray();
+            HashSet<Vector2> trackPoints = new HashSet<Vector2>();
+
+            for (int i = 0; i < track.Length; i++)
+            {
+                if (i % resolutionModifier == 0)
+                {
+                    trackPoints.Add(track[i]);
+                }
+            }
+
+            return trackPoints.ToArray();
+        }
+
+        public bool Raycast(Vector2 origin, Vector2 direction, out float distance)
+        {
+            bool hit = false;
+            float maxDistance = 500;
+            int resolutionModifier = 100;
+            // collision detection for track bounds
+            float minDistance = float.MaxValue;
+
+            Vector2[] trackPointsArray = TrackWithResolutionModifierAndDistance(resolutionModifier, maxDistance, origin);
+
+            for (int i = 0; i < trackPointsArray.Length - 1; i++)
+            {
+                Vector2 a1 = trackPointsArray[i];
+                Vector2 b1 = trackPointsArray[i + 1];
+
+                Vector2 a2 = trackPointsArray[i] + new Vector2(TrackWidth, 0);
+                Vector2 b2 = trackPointsArray[i + 1] + new Vector2(TrackWidth, 0);
+
+                bool hit1 = RaycastLine(origin, direction, a1, b1, out Vector2 intersection1);
+                bool hit2 = RaycastLine(origin, direction, a2, b2, out Vector2 intersection2);
+
+                if (hit1)
+                {
+                    minDistance = Math.Min(minDistance, (origin - intersection1).Length());
+                }
+
+                if (hit2)
+                {
+                    minDistance = Math.Min(minDistance, (origin - intersection2).Length());
+                }
+
+                hit = hit1 || hit2 || hit;
+            }
+
+            distance = minDistance;
+            return hit;
+        }
+
+        private bool RaycastLine(Vector2 origin, Vector2 direction, Vector2 a, Vector2 b, out Vector2 intersection)
+        {
+            intersection = Vector2.Zero;
+            Vector2 ray = direction;
+            Vector2 rayOrigin = origin;
+            Vector2 line = b - a;
+            Vector2 lineOrigin = a;
+
+            float cross = ray.X * line.Y - ray.Y * line.X;
+            if (cross == 0)
+            {
+                return false;
+            }
+
+            float t = ((lineOrigin.Y - rayOrigin.Y) * line.X + (rayOrigin.X - lineOrigin.X) * line.Y) / cross;
+            float u = ((rayOrigin.Y - lineOrigin.Y) * ray.X + (lineOrigin.X - rayOrigin.X) * ray.Y) / cross;
+
+            if (t >= 0 && u >= 0 && u <= 1)
+            {
+                intersection = lineOrigin + t * line;
+                return true;
+            }
+            return false;
         }
     }
 }

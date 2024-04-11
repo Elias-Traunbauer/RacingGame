@@ -1,6 +1,7 @@
 using GameLogic;
 using System.Diagnostics;
 using System.Numerics;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
 
 namespace RacingGame
 {
@@ -46,11 +47,13 @@ namespace RacingGame
                 var g = Graphics.FromImage(bitmap);
                 g.Clear(Color.SaddleBrown);
 
-                Vector2 previousTrackPiece = GameController.Track.First() - CameraPosition;
+                var track = GameController.TrackWithResolutionModifier(10);
+
+                Vector2 previousTrackPiece = track.First() - CameraPosition;
                 previousTrackPiece *= multiplier;
                 previousTrackPiece += offset;
-                var trackParts = GameController.Track.Where(x => Vector2.Distance(x, CameraPosition) < 900);
-                int trackPartsSkipped = GameController.Track.ToList().IndexOf(trackParts.First());
+                var trackParts = track.Where(x => Vector2.Distance(x, CameraPosition) < 900);
+                int trackPartsSkipped = track.ToList().IndexOf(trackParts.First());
                 cnt += trackPartsSkipped;
                 foreach (var item in trackParts)
                 {

@@ -33,18 +33,23 @@ namespace GameLogic
         public float Rotation { get; set; }
         public float SteeringAngle { get; set; }
 
+        public Vector2 StartPosition { get; set; } = new Vector2(30, 0);
+
         public float MaxSpeed { get; set; } = 300;
         public float MaxSteeringAngle { get; set; } = 30 * (float)Math.PI / 180;
 
         public Vector2 FrontCarPosition { get; set; } = new Vector2(0, 30);
 
-        public Vector2 DeltaPosition { get; set; }
-        public Vector2 DeltaVelocity { get; set; }
-        public float DeltaRotation { get; set; }
-        public float DeltaSteeringAngle { get; set; }
-
         public float Acceleration { get; set; } = 70f;
         public float SteeringSpeed { get; set; } = 1f;
+
+        public void Reset()
+        {
+            Position = StartPosition;
+            Velocity = Vector2.Zero;
+            Rotation = 0;
+            SteeringAngle = 0;
+        }
 
         public float RadToDeg(float rad)
         {
