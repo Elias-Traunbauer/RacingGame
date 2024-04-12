@@ -279,7 +279,7 @@ namespace RacingGameAI
                 }
             }
 
-            GameController.GenerateTrack(100, Random.Shared.Next());
+            //GameController.GenerateTrack(100, Random.Shared.Next());
         }
 
         public void Loop()
