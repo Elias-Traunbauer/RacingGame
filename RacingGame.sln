@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emmentaler", "Emmentaler\Em
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RacingGameAI", "RacingGameAI\RacingGameAI.csproj", "{E79971A3-A0A3-4014-9B73-69CCB3E4546A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmmentalerTests", "EmmentalerTests\EmmentalerTests.csproj", "{C1D8126F-7C6C-4B35-B67B-DCEA5D7B8A47}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{E79971A3-A0A3-4014-9B73-69CCB3E4546A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E79971A3-A0A3-4014-9B73-69CCB3E4546A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E79971A3-A0A3-4014-9B73-69CCB3E4546A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1D8126F-7C6C-4B35-B67B-DCEA5D7B8A47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1D8126F-7C6C-4B35-B67B-DCEA5D7B8A47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1D8126F-7C6C-4B35-B67B-DCEA5D7B8A47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1D8126F-7C6C-4B35-B67B-DCEA5D7B8A47}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

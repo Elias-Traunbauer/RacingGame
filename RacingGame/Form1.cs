@@ -274,10 +274,10 @@ namespace RacingGame
                 var res = emmentaler.Predict(GameAgent.State);
 
                 // update the agent
-                GameAgent.ForwardControl = res[0] > 0.5;
-                GameAgent.BackwardControl = res[1] > 0.5;
-                GameAgent.LeftControl = res[2] > 0.5;
-                GameAgent.RightControl = res[3] > 0.5;
+                GameAgent.ForwardControl = res[0] > 0;
+                GameAgent.BackwardControl = res[1] > 0;
+                GameAgent.LeftControl = res[2] > 0;
+                GameAgent.RightControl = res[3] > 0;
 
                 try
                 {
