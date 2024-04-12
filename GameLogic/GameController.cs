@@ -88,12 +88,12 @@ namespace GameLogic
 
                 Vector2 agentFront = agent.Position + agentDirection * agent.FrontCarPosition.Y;
 
-                foreach (var item in rayDirections)
-                {
-                    bool hit = Raycast(agentFront, item, out float distance);
+                //foreach (var item in rayDirections)
+                //{
+                //    bool hit = Raycast(agentFront, item, out float distance);
 
-                    rays.Add((agentFront, agentFront + item * distance));
-                }
+                //    rays.Add((agentFront, agentFront + item * distance));
+                //}
 
                 bool hitRight = Raycast(agentFront, agentDirectionNormal, out float distanceRight);
                 bool hitLeft = Raycast(agentFront, agentDirectionNormalOther, out float distanceLeft);

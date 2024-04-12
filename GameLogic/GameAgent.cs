@@ -48,12 +48,37 @@ namespace GameLogic
 
         public float[] State { get; set; } = new float[15 + 2 + 2 + 1];
 
+        public bool IsAlive { get; set; } = true;
+
         public void Reset()
+        {
+            Position = StartPosition;
+            Velocity = Vector2.Zero/* + new Vector2(0, -100)*/;
+            Rotation = 0;
+            SteeringAngle = 0;
+            IsAlive = false;
+        }
+
+        public void Restart()
         {
             Position = StartPosition;
             Velocity = Vector2.Zero;
             Rotation = 0;
             SteeringAngle = 0;
+            IsAlive = true;
+            Lifetime = 0;
+            Speeds.Clear();
+        }
+
+        public int Lifetime { get; set; }
+        public Queue<float> Speeds { get; set; } = new Queue<float>();
+
+        public float Score
+        {
+            get
+            {
+                return Lifetime * Speeds.Count() > 0 ? Speeds.Average() : 0;
+            }
         }
 
         public void UpdateState()
@@ -118,6 +143,14 @@ namespace GameLogic
 
                 State[index++] = hit ? distance / maxDistance : 1;
             }
+
+            Lifetime++;
+            Speeds.Enqueue(Velocity.Y);
+
+            if (Speeds.Count > 100)
+            {
+                Speeds.Dequeue();
+            }
         }
 
         public static float RadToDeg(float rad)
@@ -132,6 +165,16 @@ namespace GameLogic
 
         public void Update(float deltaTime)
         {
+            if (!IsAlive)
+            {
+                return;
+            }
+
+            if ((Speeds.Count != 0 && Speeds.Average() < MaxSpeed / 20) && Lifetime > 100)
+            {
+                IsAlive = false;
+            }
+
             Vector2 accelerationNow = Vector2.Zero;
 
             if (ForwardControl)
