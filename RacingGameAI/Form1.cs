@@ -2,6 +2,7 @@ using GameLogic;
 using System.Diagnostics;
 using System.Numerics;
 using EmmentalerModel;
+using static GameLogic.GameAgent;
 
 namespace RacingGameAI
 {
@@ -226,12 +227,17 @@ namespace RacingGameAI
                 g.Flush();
                 g.DrawLine(len == 1000 ? Pens.Red : Pens.Blue, start.X, start.Y, end.X, end.Y);
             }
+            
             int agentsAlive = GameController.Agents.Count(x => x.IsAlive);
             float topAgentScore = GameController.Agents.Where(x => x.IsAlive).Any() ? GameController.Agents.Where(x => x.IsAlive).OrderByDescending(x => x.Score).First().Score : 0;
             g.DrawString($"Agents alive: {agentsAlive}", new Font("Arial", 12), Brushes.White, new PointF(10, 10));
             g.DrawString($"Top agent score: {topAgentScore}", new Font("Arial", 12), Brushes.White, new PointF(10, 30));
-            float speedsAvgOfTopAgent = GameController.Agents.Where(x => x.IsAlive).Any() ? GameController.Agents.Where(x => x.IsAlive).OrderByDescending(x => x.Score).First().Speeds.Average() : 0;
+            float speedsAvgOfTopAgent = GameController.Agents.Where(x => x.IsAlive).Any() ? GameController.Agents.Where(x => x.IsAlive).OrderByDescending(x => x.Score).First().AverageSpeeds.Average() : 0;
             g.DrawString($"Top agent speed: {speedsAvgOfTopAgent}", new Font("Arial", 12), Brushes.White, new PointF(10, 50));
+            g.DrawString($"Last score average: {lastScoreAverage}", new Font("Arial", 12), Brushes.White, new PointF(10, 70));
+            g.DrawString($"Last top score: {lastTopScore}", new Font("Arial", 12), Brushes.White, new PointF(10, 90));
+            g.DrawString($"Generation: {generation}", new Font("Arial", 12), Brushes.White, new PointF(10, 110));
+            
             Invoke(new MethodInvoker(() =>
             {
                 g.Dispose();
@@ -256,27 +262,143 @@ namespace RacingGameAI
         GameAgent[] agents = new GameAgent[100];
         Emmentaler[] emmentalers = new Emmentaler[100];
 
+        public string SaveFile = @"C:\Users\trauni\source\repos\Elias-Traunbauer\RacingGame\RacingGameAI\save.emmentaler";
+
+        public void Save(Emmentaler[] emmentalers)
+        {
+            byte[][] emmentalersAsBytes = emmentalers.Select(x => x.ToBinary()).ToArray();
+            int[] counts = emmentalersAsBytes.Select(x => x.Length).ToArray();
+
+            byte[] data = new byte[sizeof(int) + sizeof(int) + emmentalersAsBytes.SelectMany(x => x).Count() + counts.Length * sizeof(int)];
+
+            int offset = 0;
+
+            // generation count
+            Buffer.BlockCopy(BitConverter.GetBytes(generation), 0, data, offset, sizeof(int));
+            offset += sizeof(int);
+
+            Buffer.BlockCopy(BitConverter.GetBytes(emmentalersAsBytes.Length), 0, data, offset, sizeof(int));
+            offset += sizeof(int);
+
+            for (int i = 0; i < counts.Length; i++)
+            {
+                Buffer.BlockCopy(BitConverter.GetBytes(counts[i]), 0, data, offset, sizeof(int));
+                offset += sizeof(int);
+            }
+
+            for (int i = 0; i < emmentalersAsBytes.Length; i++)
+            {
+                Buffer.BlockCopy(emmentalersAsBytes[i], 0, data, offset, emmentalersAsBytes[i].Length);
+                offset += emmentalersAsBytes[i].Length;
+            }
+
+            File.WriteAllBytes(SaveFile, data);
+        }
+
+        public void LoadEmmentalers()
+        {
+            byte[] data = File.ReadAllBytes(SaveFile);
+
+            int offset = 0;
+
+            int generationCount = BitConverter.ToInt32(data, offset);
+            generation = generationCount;
+            
+            offset += sizeof(int);
+
+            int emmentalerCount = BitConverter.ToInt32(data, offset);
+
+            offset += sizeof(int);
+
+            int[] counts = new int[emmentalerCount];
+
+            for (int i = 0; i < emmentalerCount; i++)
+            {
+                counts[i] = BitConverter.ToInt32(data, offset);
+                offset += sizeof(int);
+            }
+
+            Emmentaler[] emmentalers = new Emmentaler[emmentalerCount];
+
+            for (int i = 0; i < emmentalerCount; i++)
+            {
+                byte[] emmentalerData = new byte[counts[i]];
+                Buffer.BlockCopy(data, offset, emmentalerData, 0, counts[i]);
+                offset += counts[i];
+
+                emmentalers[i] = Emmentaler.FromBinary(emmentalerData);
+            }
+
+            this.emmentalers = emmentalers;
+        }
+
         public void InitializeAgents()
         {
+            bool emmentalersLoaded = false;
+            if (File.Exists(SaveFile))
+            {
+                LoadEmmentalers();
+                emmentalersLoaded = true;
+            }
             for (int i = 0; i < agents.Length; i++)
             {
                 agents[i] = new GameAgent(GameController);
-                emmentalers[i] = new Emmentaler(20, 4, new int[] { 30, 30 });
+                if (!emmentalersLoaded)
+                {
+                    emmentalers[i] = new Emmentaler(20, 4, new int[] { 30, 30 });
+                }
                 GameController.AddAgent(agents[i]);
             }
         }
-
+        float lastScoreAverage = 0;
+        float lastTopScore = 0;
+        int generation = 0;
         public void Evolution()
         {
-            GameAgent[] topAgents = agents.OrderByDescending(x => x.Score).Take(5).ToArray();
+            generation++;
+            Save(emmentalers);
+            float scoreMedian = agents.OrderByDescending(x => x.Score).ToArray()[agents.Length / 2].Score;
+            float scoreArithmeticMedian = agents.Average(x => x.Score);
+
+            float scoreAvg = (scoreMedian + scoreArithmeticMedian) / 2;
+
+            int shittyAgentsCount = agents.Count(x => x.Score < scoreAvg);
+            shittyAgentsCount = Math.Max(1, shittyAgentsCount);
+            shittyAgentsCount = Math.Min(90, shittyAgentsCount);
+
+            int goodAgentsCount = agents.Length - shittyAgentsCount;
+
+            int newAgentsPerGoodAgent = shittyAgentsCount / goodAgentsCount;
+
+            int newAgentsCount = goodAgentsCount * newAgentsPerGoodAgent;
+
+            int missingAgents = agents.Length - newAgentsCount;
+
+            GameAgent[] topAgents = agents.OrderByDescending(x => x.Score).Take(10).ToArray();
+            lastScoreAverage = scoreAvg;
+            lastTopScore = topAgents.First().Score;
 
             for (int i = 0; i < topAgents.Length; i++)
             {
-                for (int x = 0; x < 20; x++)
+                for (int x = 0; x < newAgentsPerGoodAgent; x++)
                 {
-                    emmentalers[i * 20 + x] = new Emmentaler(emmentalers[i]);
-                    agents[i * 20 + x].Restart();
+                    if (agents[i * newAgentsPerGoodAgent + x].Score < scoreAvg)
+                    {
+                        emmentalers[i * newAgentsPerGoodAgent + x] = new Emmentaler(20, 4, new int[] { 30, 30 });
+                    }
+                    else
+                    {
+                        emmentalers[i * newAgentsPerGoodAgent + x] = new Emmentaler(emmentalers[i]);
+                    }
+                    agents[i * newAgentsPerGoodAgent + x].Restart();
                 }
+            }
+            int agentIndex = agents.Length - missingAgents;
+            for (int i = 0; i < missingAgents; i++)
+            {
+                emmentalers[agentIndex] = new Emmentaler(20, 4, new int[] { 30, 30 });
+                agents[agentIndex].Restart();
+                agentIndex++;
             }
 
             //GameController.GenerateTrack(100, Random.Shared.Next());
@@ -289,16 +411,12 @@ namespace RacingGameAI
             Stopwatch w = new Stopwatch();
             while (Running)
             {
-                if (agents.All(x => !x.IsAlive))
-                {
-                    Evolution();
-                }
 
                 w.Stop();
-                GameController.Update(/*(float)w.Elapsed.TotalSeconds*/0.1f);
+                GameController.Update(/*(float)w.Elapsed.TotalSeconds*/0.25f);
                 w.Restart();
                 // lerp camera
-                CameraPosition = Vector2.Lerp(CameraPosition, agents.Where(x => x.IsAlive).Any() ? agents.Where(x => x.IsAlive).OrderByDescending(x => x.Score).First().Position : new Vector2(), 0.1f);
+                CameraPosition = Vector2.Lerp(CameraPosition, agents.Where(x => x.IsAlive).Any() ? agents.Where(x => x.IsAlive).OrderByDescending(x => x.Score).First().Position : new Vector2(), 0.25f);
 
                 //// update the neural network
                 //var res = emmentaler.Predict(GameAgent.State);
@@ -315,7 +433,7 @@ namespace RacingGameAI
                     {
                         return;
                     }
-
+                    var stateBefore = agents[i].State.ToArray() ;
                     var res = emmentalers[i].Predict(agents[i].State);
 
                     if (res != null)
@@ -325,6 +443,16 @@ namespace RacingGameAI
                         agents[i].LeftControl = res[2] > 0.5;
                         agents[i].RightControl = res[3] > 0.5;
                     }
+
+                    var stateAfter = agents[i].State.ToArray();
+
+                    agents[i].AddExperience(new GameAgent.Experience()
+                    {
+                        State = stateBefore,
+                        Actions = res,
+                        NextState = stateAfter,
+                        Reward = agents[i].GetReward()
+                    });
                 });
 
                 //for (int i = 0; i < agents.Length; i++)
@@ -346,6 +474,38 @@ namespace RacingGameAI
                 //Render();
 
                 Application.DoEvents();
+
+                if (agents.All(x => !x.IsAlive))
+                {
+                    Evolution();
+                }
+
+            }
+        }
+
+        public void TrainBatch(Emmentaler neuralNetwork, Experience[] batch, float gamma, float learningRate)
+        {
+            foreach (var experience in batch)
+            {
+                float[] currentState = experience.State;
+                float[] actionsTaken = experience.Actions; // Array of actions
+                float rewardReceived = experience.Reward;
+                float[] nextState = experience.NextState;
+
+                // Predict current Q-values
+                float[] currentQValues = neuralNetwork.Predict(currentState);
+                float[] nextQValues = neuralNetwork.Predict(nextState);
+
+                // Calculate target Q-values
+                float maxNextQ = nextQValues.Max();  // or other aggregation as suitable
+                float[] targetQValues = currentQValues.ToArray(); // Clone current Q-values
+                for (int i = 0; i < targetQValues.Length; i++)
+                {
+                    targetQValues[i] = rewardReceived + gamma * maxNextQ;
+                }
+
+                // Train the network
+                neuralNetwork.Backpropagate(currentState, targetQValues, learningRate);
             }
         }
 

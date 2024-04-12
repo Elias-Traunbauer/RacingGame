@@ -52,7 +52,8 @@ namespace GameLogic
 
         public void Reset()
         {
-            Position = StartPosition;
+            FinalScore = GetReward();
+            Distance = Position.Y;
             Velocity = Vector2.Zero/* + new Vector2(0, -100)*/;
             Rotation = 0;
             SteeringAngle = 0;
@@ -68,17 +69,67 @@ namespace GameLogic
             IsAlive = true;
             Lifetime = 0;
             Speeds.Clear();
+
+            Position = StartPosition + new Vector2(Random.Shared.Next(0, GameController.TrackWidth / 2), 0);
         }
 
         public int Lifetime { get; set; }
         public Queue<float> Speeds { get; set; } = new Queue<float>();
+        public Queue<float> AverageSpeeds { get; set; } = new Queue<float>();
+
+        public float Distance { get; set; }
+
+        public float FinalScore = 0;
 
         public float Score
         {
             get
             {
-                return Lifetime * Speeds.Count() > 0 ? Speeds.Average() : 0;
+                return FinalScore;
+                return GetReward() + (IsAlive ? 0 : 10);
+                if (Distance <= 0)
+                {
+                    return 0;
+                }
+                return (Distance / (Lifetime / 10)) * (AverageSpeeds.Count > 0 ? AverageSpeeds.Average() : 0);
             }
+        }
+
+        public struct Experience
+        {
+            public float[] State { get; set; }
+            public float[] Actions { get; set; }
+            public float Reward { get; set; }
+            public float[] NextState { get; set; }
+        }
+
+        public Queue<Experience> Experiences { get; set; } = new Queue<Experience>();
+
+        public void AddExperience(Experience experience)
+        {
+            Experiences.Enqueue(experience);
+        }
+
+        public void ClearExperiences()
+        {
+            Experiences.Clear();
+        }
+
+        public Experience[] GetTrainingBatch()
+        {
+            var batch = Experiences.ToArray();
+            Experiences.Clear();
+            return batch;
+        }
+
+        public float GetReward()
+        {
+            float reward = 0;
+            reward += Velocity.Y / MaxSpeed;
+            //reward -= (float)Math.Sin(Rotation);
+            reward -= IsAlive ? 0 : 1 * 10;
+            reward += Position.Y / GameController.TrackLength;
+            return reward;
         }
 
         public void UpdateState()
@@ -93,8 +144,13 @@ namespace GameLogic
             State[index++] = (float)Math.Sin(rotationInRad);
             State[index++] = (float)Math.Sin(rotationInRad);
 
-            State[index++] = (float)Math.Sin(steeringAngleInRad);
-            State[index++] = (float)Math.Sin(steeringAngleInRad);
+            float minSteeringRad = -MaxSteeringAngle;
+            float maxSteeringRad = MaxSteeringAngle;
+
+            float steeringAngleNormalized = (steeringAngleInRad - minSteeringRad) / (maxSteeringRad - minSteeringRad);
+
+            State[index++] = steeringAngleNormalized;
+            State[index++] = 0;
 
             Vector2 agentDirection = new((float)Math.Cos(Rotation), (float)Math.Sin(Rotation));
             agentDirection = new Vector2(agentDirection.Y, agentDirection.X);
@@ -151,6 +207,8 @@ namespace GameLogic
             {
                 Speeds.Dequeue();
             }
+
+            AverageSpeeds.Enqueue(Speeds.Average());
         }
 
         public static float RadToDeg(float rad)

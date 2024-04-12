@@ -100,9 +100,9 @@ namespace GameLogic
 
                 //rays.Add((agentFront, agentFront + agentDirection * 100));
 
-                rays.Add((agentFront, agentFront + Vector2.Normalize(agentDirectionNormal) * (hitRight? distanceRight : 1000)));
+                //rays.Add((agentFront, agentFront + Vector2.Normalize(agentDirectionNormal) * (hitRight? distanceRight : 1000)));
 
-                rays.Add((agentFront, agentFront + Vector2.Normalize(agentDirectionNormalOther) * (hitLeft ? distanceLeft : 1000)));
+                //rays.Add((agentFront, agentFront + Vector2.Normalize(agentDirectionNormalOther) * (hitLeft ? distanceLeft : 1000)));
 
                 if (hitRight && distanceRight < minDistance)
                 {
@@ -213,8 +213,8 @@ namespace GameLogic
                 Vector2 a2 = trackPointsArray[i] + new Vector2(TrackWidth, 0);
                 Vector2 b2 = trackPointsArray[i + 1] + new Vector2(TrackWidth, 0);
 
-                rays.Add((a1, b1));
-                rays.Add((a2, b2));
+                //rays.Add((a1, b1));
+                //rays.Add((a2, b2));
 
                 bool hit1 = RaycastLine(origin, direction, a1, b1, out Vector2 intersection1);
                 bool hit2 = RaycastLine(origin, direction, a2, b2, out Vector2 intersection2);
