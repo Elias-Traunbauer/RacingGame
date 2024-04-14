@@ -6,23 +6,23 @@ namespace GameLogic
     public class GameController
     {
         private const int TrackResolutionModifier = 3;
-        public HashSet<GameAgent> Agents = [];
+        public HashSet<IGameAgent> Agents = [];
         public HashSet<Vector2> Track = [];
         public HashSet<Vector2> TrackRaw = [];
 
         public int TrackLength { get; set; }
 
-        public int TrackWidth { get; set; } = 200;
+        public int TrackWidth { get; set; } = 180;
 
         public int TrackMaxDeltaX { get; set; } = 300;
         public int TrackMaxDeltaY { get; set; } = 20;
 
-        public void AddAgent(GameAgent agent)
+        public void AddAgent(IGameAgent agent)
         {
             Agents.Add(agent);
         }
 
-        public void RemoveAgent(GameAgent agent)
+        public void RemoveAgent(IGameAgent agent)
         {
             Agents.Remove(agent);
         }
@@ -41,7 +41,7 @@ namespace GameLogic
         {
             rays.Clear();
             float minDistance = 10;
-            foreach (GameAgent agent in Agents)
+            foreach (IGameAgent agent in Agents)
             {
                 agent.Update(deltaTime);
 
@@ -88,12 +88,15 @@ namespace GameLogic
 
                 Vector2 agentFront = agent.Position + agentDirection * agent.FrontCarPosition.Y;
 
-                //foreach (var item in rayDirections)
-                //{
-                //    bool hit = Raycast(agentFront, item, out float distance);
+                if (agent.IsAlive)
+                {
+                    //foreach (var item in rayDirections)
+                    //{
+                    //    bool hit = Raycast(agentFront, item, out float distance);
 
-                //    rays.Add((agentFront, agentFront + item * distance));
-                //}
+                    //    rays.Add((agentFront, agentFront + item * distance));
+                    //}
+                }
 
                 bool hitRight = Raycast(agentFront, agentDirectionNormal, out float distanceRight);
                 bool hitLeft = Raycast(agentFront, agentDirectionNormalOther, out float distanceLeft);
@@ -198,7 +201,7 @@ namespace GameLogic
         public bool Raycast(Vector2 origin, Vector2 direction, out float distance)
         {
             bool hit = false;
-            float maxDistance = 500;
+            float maxDistance = TrackWidth * 4f;
             int resolutionModifier = 10;
             // collision detection for track bounds
             float minDistance = maxDistance;

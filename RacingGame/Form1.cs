@@ -8,7 +8,7 @@ namespace RacingGame
     public partial class Form1 : Form
     {
         readonly GameController GameController;
-        readonly GameAgent GameAgent;
+        readonly RacingGameAIWithBoost.GameAgent GameAgent;
 
         public Vector2 CameraPosition { get; set; } = new Vector2(0, 0);
 
@@ -32,6 +32,8 @@ namespace RacingGame
             GameAgent.Position = new Vector2(30, 0);
 
             GameController.AddAgent(GameAgent);
+
+            GameAgent.Restart();
         }
 
         public /*async Task*/ void Render()
@@ -270,14 +272,14 @@ namespace RacingGame
                 // lerp camera
                 CameraPosition = Vector2.Lerp(CameraPosition, GameAgent.Position, 0.1f);
 
-                // update the neural network
-                var res = emmentaler.Predict(GameAgent.State);
+                //// update the neural network
+                //var res = emmentaler.Predict(GameAgent.State);
 
-                // update the agent
-                GameAgent.ForwardControl = res[0] > 0;
-                GameAgent.BackwardControl = res[1] > 0;
-                GameAgent.LeftControl = res[2] > 0;
-                GameAgent.RightControl = res[3] > 0;
+                //// update the agent
+                //GameAgent.ForwardControl = res[0] > 0;
+                //GameAgent.BackwardControl = res[1] > 0;
+                //GameAgent.LeftControl = res[2] > 0;
+                //GameAgent.RightControl = res[3] > 0;
 
                 try
                 {
@@ -293,6 +295,11 @@ namespace RacingGame
                 //Render();
 
                 Application.DoEvents();
+
+                if (!GameAgent.IsAlive)
+                {
+                    GameAgent.Restart();
+                }
             }
         }
 
@@ -325,6 +332,10 @@ namespace RacingGame
             {
                 GameAgent.RightControl = true;
             }
+            if (e.KeyCode == Keys.ShiftKey)
+            {
+                GameAgent.BoostControl = true;
+            }
         }
 
         private void Form1_KeyUp(object? sender, KeyEventArgs e)
@@ -344,6 +355,10 @@ namespace RacingGame
             if (e.KeyCode == Keys.D)
             {
                 GameAgent.RightControl = false;
+            }
+            if (e.KeyCode == Keys.ShiftKey)
+            {
+                GameAgent.BoostControl = false;
             }
         }
     }

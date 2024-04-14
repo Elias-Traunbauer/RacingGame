@@ -5,9 +5,10 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using GameLogic;
 using static GameLogic.IGameAgent;
 
-namespace GameLogic
+namespace RacingGameAIWithBoost
 {
     public class GameAgent : IGameAgent
     {
@@ -32,6 +33,11 @@ namespace GameLogic
         public bool BackwardControl { get; set; }
         public bool LeftControl { get; set; }
         public bool RightControl { get; set; }
+        public bool BoostControl { get; set; }
+
+        public float CurrentBoost { get; set; } = 50f;
+        public float MaxBoost { get; set; } = 50f;
+        public float BoostGrowRate { get; set; } = 1.1f;
 
         public Vector2 Position { get; set; }
         public Vector2 Velocity { get; set; }
@@ -48,7 +54,7 @@ namespace GameLogic
         public float Acceleration { get; set; } = 70f;
         public float SteeringSpeed { get; set; } = 1f;
 
-        public float[] State { get; set; } = new float[15 + 2 + 2 + 1];
+        public float[] State { get; set; } = new float[15 + 2 + 2 + 1 + 1];
 
         public bool IsAlive { get; set; } = true;
 
@@ -70,6 +76,7 @@ namespace GameLogic
             Lifetime = 0;
             Speeds.Clear();
             Velocities.Clear();
+            CurrentBoost = 10;
 
             //Rotation = (float)((MaxSteeringAngle / 2) - Random.Shared.NextDouble() * 2 * (MaxSteeringAngle / 2));
 
@@ -123,9 +130,11 @@ namespace GameLogic
             //reward += Velocity.Y / MaxSpeed;
             //reward -= (float)Math.Sin(Rotation);
             //reward -= IsAlive ? 0 : 1 * 10;
-            reward += Position.Y / GameController.TrackLength + (Velocities.Count != 0 ? Velocities.Average(x => x.Y) : 0);
+            reward += (Position.Y / GameController.TrackLength) * 4 + (Velocities.Count != 0 ? Velocities.Average(x => x.Y) * 5 : 0);
             return reward;
         }
+
+        public bool HasBoost {  get; set; }
 
         public Queue<Vector2> Velocities { get; set; } = new Queue<Vector2>();
 
@@ -137,7 +146,9 @@ namespace GameLogic
 
             int index = 0;
 
-            State[index++] = Velocity.Length() / MaxSpeed;
+            State[index++] = CurrentBoost / MaxBoost;
+
+            State[index++] = Velocity.Length() / (MaxSpeed * 2);
 
             State[index++] = (float)Math.Sin(rotationInRad);
             State[index++] = (float)Math.Sin(rotationInRad);
@@ -148,7 +159,7 @@ namespace GameLogic
             float steeringAngleNormalized = (steeringAngleInRad - minSteeringRad) / (maxSteeringRad - minSteeringRad);
 
             State[index++] = steeringAngleNormalized;
-            State[index++] = 0;
+            State[index++] = HasBoost ? 1 : 0;
 
             Vector2 agentDirection = new((float)Math.Cos(Rotation), (float)Math.Sin(Rotation));
             agentDirection = new Vector2(agentDirection.Y, agentDirection.X);
@@ -189,7 +200,7 @@ namespace GameLogic
                 Rotate(agentDirection,-90),
             ];
 
-            float maxDistance = GameController.TrackWidth * 2;
+            float maxDistance = GameController.TrackWidth * 4;
 
             foreach (var item in rayDirections)
             {
@@ -227,7 +238,7 @@ namespace GameLogic
                 return;
             }
 
-            if ((Speeds.Count != 0 && Speeds.Average() < MaxSpeed / 20) && Lifetime > 100)
+            if ((Speeds.Count != 0 && Speeds.Average() < MaxSpeed / 50) && Lifetime > 100)
             {
                 IsAlive = false;
             }
@@ -241,6 +252,40 @@ namespace GameLogic
             if (BackwardControl)
             {
                 accelerationNow += new Vector2(0, -Acceleration) * 3 * deltaTime;
+            }
+
+            if (BoostControl)
+            {
+                if (CurrentBoost > 0)
+                {
+                    HasBoost = true;
+                    accelerationNow *= 2;
+                    CurrentBoost -= 20 * deltaTime;
+
+                    if (CurrentBoost < 0)
+                    {
+                        CurrentBoost = 0;
+                    }
+                }
+                else
+                {
+                    HasBoost = false;
+                }
+            }
+            else
+            {
+                HasBoost = false;
+                CurrentBoost += CurrentBoost * BoostGrowRate * BoostGrowRate * deltaTime + 3f * deltaTime;
+
+                if (CurrentBoost < 0)
+                {
+                    CurrentBoost = 0;
+                }
+
+                if (CurrentBoost > MaxBoost)
+                {
+                    CurrentBoost = MaxBoost;
+                }
             }
 
             if (!ForwardControl && !BackwardControl)
@@ -277,7 +322,32 @@ namespace GameLogic
                 }
             }
 
+            if (Velocity.Length() > (HasBoost ? MaxSpeed * 2 : MaxSpeed))
+            {
+                // lerp towards max speed
+                Velocity = Vector2.Lerp(Velocity, Vector2.Normalize(Velocity) * (HasBoost ? MaxSpeed * 2 : MaxSpeed), 0.1f);
+            }
+
+            if (Velocity.Y < -50)
+            {
+                Velocity = new Vector2(0, -50);
+            }
+
             SteeringAngle = Math.Clamp(SteeringAngle, -MaxSteeringAngle, MaxSteeringAngle);
+            float originalSteeringAngle = SteeringAngle;
+            //if (HasBoost && Velocity.Length() > MaxSpeed)
+            //{
+            //    SteeringAngle /= 2;
+            //}
+            float Remap(float value, float from1, float to1, float from2, float to2)
+            {
+                return Math.Clamp((value - from1) / (to1 - from1) * (to2 - from2) + from2, from2, to2);
+            }
+
+
+            float steeringReduction = Remap(Velocity.Length(), MaxSpeed / 2, MaxSpeed, 0, 0.5f);
+
+            SteeringAngle *= (1 - steeringReduction);
 
             //Vector2 carDirection = new((float)Math.Cos(Rotation), (float)Math.Sin(Rotation));
             //carDirection = new Vector2(carDirection.Y, carDirection.X);
@@ -286,16 +356,6 @@ namespace GameLogic
             steeringDirection = new Vector2(steeringDirection.Y, steeringDirection.X);
 
             Velocity += accelerationNow/* * deltaTime*/;
-
-            if (Velocity.Length() > MaxSpeed)
-            {
-                Velocity = Vector2.Normalize(Velocity) * MaxSpeed;
-            }
-
-            if (Velocity.Y < -50)
-            {
-                Velocity = new Vector2(0, -50);
-            }
 
             
             Vector2 frontPositionOffsetRotated = Vector2.Transform(FrontCarPosition, Matrix3x2.CreateRotation(-Rotation));
@@ -317,12 +377,13 @@ namespace GameLogic
             Rotation = -(float)Math.Atan2(directionOfCar.Y, directionOfCar.X);
             Rotation += (float)Math.PI / 2;
 
+            SteeringAngle = originalSteeringAngle;
+
             UpdateState();
         }
         public Vector2 SteeringDirection { get; set; }
         public Vector2 FrontOfCarPositionV { get; set; }
         public Vector2 BackOfCarPositionV { get; set; }
-
         public override int GetHashCode()
         {
             return Id.GetHashCode();

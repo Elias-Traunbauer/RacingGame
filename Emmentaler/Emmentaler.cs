@@ -62,16 +62,16 @@ namespace EmmentalerModel
             Weights[0] = new float[InputNeuronCount * HiddenNeuronCounts[0]];
             for (int i = 0; i < Weights[0].Length; i++)
             {
-                Weights[0][i] = (float)(Random.Shared.NextDouble() * 2 - 1) / 3f;
+                Weights[0][i] = (float)(Random.Shared.NextDouble() * 2 - 1) / 10f;
             }
 
             // Initialize the weights for the hidden layers
             for (int i = 1; i < HiddenNeuronCounts.Length; i++)
             {
-                Weights[i] = new float[HiddenNeuronCounts[i] * HiddenNeuronCounts[i]];
+                Weights[i] = new float[HiddenNeuronCounts[i] * HiddenNeuronCounts[i - 1]];
                 for (int j = 0; j < Weights[i].Length; j++)
                 {
-                    Weights[i][j] = (float)(Random.Shared.NextDouble() * 2 - 1) / 3f;
+                    Weights[i][j] = (float)(Random.Shared.NextDouble() * 2 - 1) / 10f;
                 }
             }
 
@@ -94,6 +94,8 @@ namespace EmmentalerModel
                 }
             }
         }
+
+        public float[][] lastNeurons = [];
 
         public float[] Predict(float[] input)
         {
@@ -131,7 +133,7 @@ namespace EmmentalerModel
                 }
                 neurons[^1][i] = Sigmoid(sum + Biases[^1][i]);
             }
-
+            lastNeurons = neurons.ToArray();
             return neurons[^1];
         }
 
@@ -223,7 +225,7 @@ namespace EmmentalerModel
 
             for (int i = 1; i < hiddenLayerCount; i++)
             {
-                emmentaler.Weights[i] = new float[emmentaler.HiddenNeuronCounts[i] * (i == hiddenLayerCount ? emmentaler.OutputNeuronCount : emmentaler.HiddenNeuronCounts[i])];
+                emmentaler.Weights[i] = new float[emmentaler.HiddenNeuronCounts[i] * emmentaler.HiddenNeuronCounts[i - 1]];
                 for (int j = 0; j < emmentaler.Weights[i].Length; j++)
                 {
                     emmentaler.Weights[i][j] = BitConverter.ToSingle(bytes, offset);

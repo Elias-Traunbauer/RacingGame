@@ -5,7 +5,7 @@ using EmmentalerModel;
 using static GameLogic.GameAgent;
 using System;
 
-namespace RacingGameAI
+namespace RacingGameAIWithBoost
 {
     public partial class Form1 : Form
     {
@@ -45,6 +45,20 @@ namespace RacingGameAI
             Bitmap bitmap = new Bitmap(width, height);
             var g = Graphics.FromImage(bitmap);
             g.Clear(Color.Gray);
+            bool minimal = true;
+            if (minimal)
+            {
+                g.DrawString($"Generation: {generation}", new Font("Arial", 12), Brushes.White, new PointF(10, 110));
+                Invoke(new MethodInvoker(() =>
+                {
+                    VisualizeVisionOfAgent(g, GameController.Agents.OrderByDescending(x => x.Position.Y).First(), 100, 10, 800, 800);
+                    g.Dispose();
+                    pb.Image?.Dispose();
+                    pb.Image = bitmap;
+                    renderSemaphore.Release();
+                }));
+                return;
+            }
 
             var track = GameController.TrackWithResolutionModifier(3);
             if (track.Length == 0)
@@ -161,6 +175,11 @@ namespace RacingGameAI
                     carPoints[i] += pos;
                 }
 
+                // draw boost
+                if (agent is GameAgent ag && ag.HasBoost)
+                {
+                    g.DrawLine(Pens.Orange, (PointF)backCarPos, (PointF)(pos - (forward * multiplier * agent.FrontCarPosition.Length() * 2)));
+                }
 
                 Vector2[] frontWheelPositions = new Vector2[]
                 {
@@ -239,7 +258,7 @@ namespace RacingGameAI
             g.DrawString($"Last top score: {lastTopScore}", new Font("Arial", 12), Brushes.White, new PointF(10, 90));
             g.DrawString($"Generation: {generation}", new Font("Arial", 12), Brushes.White, new PointF(10, 110));
             int size = width / 3;
-            int bestAgentIndex = GameController.Agents.ToList().IndexOf(GameController.Agents.OrderByDescending(x => x.Score).First());
+            int bestAgentIndex = GameController.Agents.ToList().IndexOf((GameController.Agents.Where(x => x.IsAlive).Any() ? GameController.Agents.Where(x => x.IsAlive) : GameController.Agents).OrderByDescending(x => x.Score).First());
             VisualizeNeuralNetworkOnImage(g, emmentalers[bestAgentIndex], 10, 130, size, size);
 
             int visionWidth = size;
@@ -273,7 +292,7 @@ namespace RacingGameAI
         GameAgent[] agents = new GameAgent[100];
         Emmentaler[] emmentalers = new Emmentaler[100];
 
-        public string SaveFile = @"C:\Users\trauni\Desktop\RacingGame\RacingGameAI\save.emmentaler";
+        public string SaveFile = @"C:\Users\trauni\Desktop\RacingGame\RacingGameAIWithBoost\save.emmentaler";
 
         public void Save(Emmentaler[] emmentalers)
         {
@@ -356,7 +375,7 @@ namespace RacingGameAI
                 agents[i] = new GameAgent(GameController);
                 if (!emmentalersLoaded)
                 {
-                    emmentalers[i] = new Emmentaler(20, 4, new int[] { 30, 30 });
+                    emmentalers[i] = new Emmentaler(21, 5, new int[] { 50, 30 });
                 }
                 GameController.AddAgent(agents[i]);
             }
@@ -394,7 +413,7 @@ namespace RacingGameAI
                     Emmentaler parent1 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     Emmentaler parent2 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     emmentalers[i] = Crossover(parent1, parent2);
-                    Mutate(emmentalers[i], 0.05f, 0.03f);
+                    Mutate(emmentalers[i], 0.1f, 0.05f);
                 }
             }
 
@@ -513,13 +532,14 @@ namespace RacingGameAI
                     agents[i].BackwardControl = res[1] > 0.5;
                     agents[i].LeftControl = res[2] > 0.5;
                     agents[i].RightControl = res[3] > 0.5;
+                    agents[i].BoostControl = res[4] > 0.5;
                 }
 
-                Parallel.For(0, agents.Length, (i) => Process(i));
-                //for (int i = 0; i < agents.Length; i++)
-                //{
-                //    Process(i);
-                //}
+                //Parallel.For(0, agents.Length, (i) => Process(i));
+                for (int i = 0; i < agents.Length; i++)
+                {
+                    Process(i);
+                }
 
                 try
                 {
@@ -558,7 +578,7 @@ namespace RacingGameAI
 
         private void VisualizeVisionOfAgent(Graphics g, IGameAgent agent, int x, int y, int width, int height)
         {
-            float[] visionRays = agent.State[5..];
+            float[] visionRays = agent.State[6..];
 
             bool[] controls = [
                 agent.ForwardControl,
@@ -634,6 +654,18 @@ namespace RacingGameAI
                     g.FillPolygon(Brushes.Black, points);
                 }
                 angle += MathF.PI / 2;
+            }
+            if (agent is GameAgent ag)
+            {
+                if (ag.BoostControl)
+                {
+                    g.FillRectangle(Brushes.Orange, new Rectangle(
+                        width / 2 + x - 10,
+                        controlY + y + controlHeight / 2 - 10,
+                        20,
+                        20
+                        ));
+                }
             }
 
             foreach (var item in rayTargets)
@@ -857,7 +889,7 @@ namespace RacingGameAI
                     float neuron = neurons[(int)i][(int)j];
 
                     // last layer binary
-                    if (i == layerCount - 1/* || true*/)
+                    if (i == layerCount - 1/* || true*/ && false)
                     {
                         neuron = neuron > 0.5f ? neuronAbsoluteMax : -neuronAbsoluteMax;
                     }
