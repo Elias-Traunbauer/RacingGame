@@ -364,6 +364,8 @@ namespace RacingGameAIWithBoost
 
         public void InitializeAgents()
         {
+            string projectPath = Path.GetDirectoryName(Path.GetDirectoryName(Directory.GetCurrentDirectory()))[0..^3] + "save.emmentaler";
+            SaveFile = projectPath;
             bool emmentalersLoaded = false;
             if (File.Exists(SaveFile))
             {
