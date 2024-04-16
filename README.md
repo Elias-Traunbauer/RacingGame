@@ -1,1 +1,1 @@
-![preview](https://github.com/Elias-Traunbauer/RacingGame/blob/[branch]/image.png?raw=true)
+![preview](https://github.com/Elias-Traunbauer/RacingGame/blob/master/image.png?raw=true)
