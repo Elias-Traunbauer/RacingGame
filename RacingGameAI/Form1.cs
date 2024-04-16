@@ -345,6 +345,8 @@ namespace RacingGameAI
 
         public void InitializeAgents()
         {
+            // local project path not absolute
+            string projectPath = Path.GetDirectoryName(Path.GetDirectoryName(Directory.GetCurrentDirectory()))[0..^3] + "save.emmentaler";
             bool emmentalersLoaded = false;
             if (File.Exists(SaveFile))
             {

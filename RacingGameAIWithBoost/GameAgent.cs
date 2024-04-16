@@ -78,9 +78,9 @@ namespace RacingGameAIWithBoost
             Velocities.Clear();
             CurrentBoost = 10;
 
-            //Rotation = (float)((MaxSteeringAngle / 2) - Random.Shared.NextDouble() * 2 * (MaxSteeringAngle / 2));
+            Rotation = (float)((MaxSteeringAngle / 2) - Random.Shared.NextDouble() * 2 * (MaxSteeringAngle / 2));
 
-            Position = StartPosition/* + new Vector2(Random.Shared.Next(0, GameController.TrackWidth / 2), 0)*/;
+            Position = StartPosition + new Vector2(Random.Shared.Next(0, GameController.TrackWidth / 2), 0);
         }
 
         public int Lifetime { get; set; }
@@ -150,8 +150,10 @@ namespace RacingGameAIWithBoost
 
             State[index++] = Velocity.Length() / (MaxSpeed * 2);
 
-            State[index++] = (float)Math.Sin(rotationInRad);
-            State[index++] = (float)Math.Sin(rotationInRad);
+            //State[index++] = (float)Math.Sin(rotationInRad);
+            //State[index++] = (float)Math.Sin(rotationInRad);
+            State[index++] = 0.5f;
+            State[index++] = 0.5f;
 
             float minSteeringRad = -MaxSteeringAngle;
             float maxSteeringRad = MaxSteeringAngle;
@@ -175,29 +177,21 @@ namespace RacingGameAIWithBoost
             }
 
             Vector2[] rayDirections = [
-
+                Rotate(agentDirection, -90),
+                Rotate(agentDirection, -75),
+                Rotate(agentDirection, -60),
+                Rotate(agentDirection, -45),
+                Rotate(agentDirection, -30),
+                Rotate(agentDirection, -20),
+                Rotate(agentDirection, -10),
                 agentDirection,
-
                 Rotate(agentDirection, 10),
-                Rotate(agentDirection,-10),
-
                 Rotate(agentDirection, 20),
-                Rotate(agentDirection,-20),
-
                 Rotate(agentDirection, 30),
-                Rotate(agentDirection,-30),
-
                 Rotate(agentDirection, 45),
-                Rotate(agentDirection,-45),
-
                 Rotate(agentDirection, 60),
-                Rotate(agentDirection,-60),
-
                 Rotate(agentDirection, 75),
-                Rotate(agentDirection,-75),
-
                 Rotate(agentDirection, 90),
-                Rotate(agentDirection,-90),
             ];
 
             float maxDistance = GameController.TrackWidth * 4;

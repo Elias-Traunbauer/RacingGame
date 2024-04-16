@@ -45,7 +45,7 @@ namespace RacingGameAIWithBoost
             Bitmap bitmap = new Bitmap(width, height);
             var g = Graphics.FromImage(bitmap);
             g.Clear(Color.Gray);
-            bool minimal = true;
+            bool minimal = false;
             if (minimal)
             {
                 g.DrawString($"Generation: {generation}", new Font("Arial", 12), Brushes.White, new PointF(10, 110));
@@ -375,7 +375,7 @@ namespace RacingGameAIWithBoost
                 agents[i] = new GameAgent(GameController);
                 if (!emmentalersLoaded)
                 {
-                    emmentalers[i] = new Emmentaler(21, 5, new int[] { 50, 30 });
+                    emmentalers[i] = new Emmentaler(21, 5, new int[] { 30, 30 }/*Enumerable.Repeat(4, 69).ToArray()*/);
                 }
                 GameController.AddAgent(agents[i]);
             }
@@ -396,7 +396,7 @@ namespace RacingGameAIWithBoost
             }
 
             // Select the top performers
-            int numberOfSurvivors = populationSize / 3;  // Keep top 30%
+            int numberOfSurvivors = populationSize / 2;  // Keep top 50%
             Emmentaler[] survivors = SelectTopPerformers(emmentalers, fitnessScores, numberOfSurvivors);
 
             // Create a new generation
@@ -441,30 +441,22 @@ namespace RacingGameAIWithBoost
         {
             Emmentaler child = new Emmentaler(parent1.InputNeuronCount, parent1.OutputNeuronCount, parent1.HiddenNeuronCounts);
             Random rnd = new Random();
-            int crossoverPoint = rnd.Next(parent1.Weights.Length);  // Choose a crossover point
+            float weightForCrossoverCombination = Remap((float)rnd.NextDouble(), 0, 1, 0.3f, 0.7f);
 
             for (int i = 0; i < child.Weights.Length; i++)
             {
-                if (i < crossoverPoint)
-                {
-                    child.Weights[i] = parent1.Weights[i].ToArray();  // Use parent1 weights before crossover point
-                }
-                else
-                {
-                    child.Weights[i] = parent2.Weights[i].ToArray();  // Use parent2 weights after crossover point
-                }
+                float[] resultWeight = parent1.Weights[i].Select(x => x *  weightForCrossoverCombination).ToArray();
+                float[] result2Weight = parent2.Weights[i].Select(x => x * (1 - weightForCrossoverCombination)).ToArray();
+
+                child.Weights[i] = resultWeight.Zip(result2Weight).Select((x) => (x.First + x.Second)).ToArray();
             }
 
             for (int i = 0; i < child.Biases.Length; i++)
             {
-                if (i < crossoverPoint)
-                {
-                    child.Biases[i] = parent1.Biases[i].ToArray();  // Use parent1 biases before crossover point
-                }
-                else
-                {
-                    child.Biases[i] = parent2.Biases[i].ToArray();  // Use parent2 biases after crossover point
-                }
+                float[] resultWeight = parent1.Biases[i].Select(x => x * weightForCrossoverCombination).ToArray();
+                float[] result2Weight = parent2.Biases[i].Select(x => x * (1 - weightForCrossoverCombination)).ToArray();
+
+                child.Biases[i] = resultWeight.Zip(result2Weight).Select((x) => (x.First + x.Second)).ToArray();
             }
             return child;
         }
@@ -497,10 +489,14 @@ namespace RacingGameAIWithBoost
 
         public void Loop()
         {
+            GameController.TrackMaxDeltaX = 300;
+            GameController.TrackWidth = 200;
+            GameController.GenerateTrack(100, Random.Shared.Next());
+
             InitializeAgents();
 
             Stopwatch w = new Stopwatch();
-            float speed = 0.1f;
+            float speed = 0.2f;
             while (Running)
             {
 
@@ -614,7 +610,7 @@ namespace RacingGameAIWithBoost
                 90,
                 -90
             ];
-
+            Array.Sort(angles);
             Vector2 rayOrigin = new Vector2(width / 2, controlY);
             Vector2 up = new Vector2(0, -1);
 
@@ -677,22 +673,22 @@ namespace RacingGameAIWithBoost
 
             var polygonPoints = new PointF[]
             {
-                rayTargets[14],
-                rayTargets[12],
-                rayTargets[10],
-                rayTargets[8],
-                rayTargets[6],
-                rayTargets[4],
-                rayTargets[2],
                 rayTargets[0],
                 rayTargets[1],
+                rayTargets[2],
                 rayTargets[3],
+                rayTargets[4],
                 rayTargets[5],
+                rayTargets[6],
                 rayTargets[7],
+                rayTargets[8],
                 rayTargets[9],
+                rayTargets[10],
                 rayTargets[11],
+                rayTargets[12],
                 rayTargets[13],
                 rayTargets[14],
+                rayTargets[0],
             };
 
             g.DrawPolygon(Pens.Black, polygonPoints.Select(d => new PointF(d.X + x, d.Y + y)).ToArray());
@@ -719,7 +715,8 @@ namespace RacingGameAIWithBoost
             Vector2 multiplier = new Vector2(1, -1);
             var pos = new Vector2(x + width * 0.8f, y + controlY + controlHeight / 2);
 
-            Vector2 forward = new((float)Math.Cos(agent.Rotation), (float)Math.Sin(agent.Rotation));
+            Vector2 forward = new((float)Math.Cos(0), (float)Math.Sin(0));
+            //Vector2 forward = new((float)Math.Cos(agent.Rotation), (float)Math.Sin(agent.Rotation));
             forward = new Vector2(forward.Y, forward.X);
 
             var frontCarPos = pos;
@@ -737,7 +734,8 @@ namespace RacingGameAIWithBoost
 
             int carWidth = 20;
             int carHeight = (int)(agent.FrontCarPosition.Length() * 2);
-            Matrix3x2 rotationMatrix = Matrix3x2.CreateRotation(agent.Rotation);
+            Matrix3x2 rotationMatrix = Matrix3x2.CreateRotation(0);
+            //Matrix3x2 rotationMatrix = Matrix3x2.CreateRotation(agent.Rotation);
             Vector2[] carPoints = new Vector2[]
             {
                         new(-carWidth / 2, -carHeight / 2),
@@ -805,13 +803,13 @@ namespace RacingGameAIWithBoost
 
         }
 
+        float Remap(float value, float from1, float to1, float from2, float to2)
+        {
+            return Math.Clamp((value - from1) / (to1 - from1) * (to2 - from2) + from2, 0, 1);
+        }
+
         private void VisualizeNeuralNetworkOnImage(Graphics g, Emmentaler emmentaler, int x, int y, int width, int height)
         {
-            float Remap(float value, float from1, float to1, float from2, float to2)
-            {
-                return Math.Clamp((value - from1) / (to1 - from1) * (to2 - from2) + from2, 0, 1);
-            }
-
             Color Lerp(Color a, Color b, float t) => Color.FromArgb((int)(a.R + (b.R - a.R) * t), (int)(a.G + (b.G - a.G) * t), (int)(a.B + (b.B - a.B) * t));
 
             float[][] neurons = emmentaler.lastNeurons;
@@ -912,8 +910,6 @@ namespace RacingGameAIWithBoost
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            GameController.GenerateTrack(100, Random.Shared.Next());
-
             var thread = new Thread(Loop)
             {
                 IsBackground = true
