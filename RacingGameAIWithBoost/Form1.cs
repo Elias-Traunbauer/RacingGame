@@ -397,9 +397,25 @@ namespace RacingGameAIWithBoost
                 fitnessScores[i] = agents[i].FinalScore;  // Assume this method returns a fitness score
             }
 
+            float[][] weightMedians = new float[emmentalers[0].Weights.Length][];
+            float[][] biasMedians = new float[emmentalers[0].Biases.Length][];
+
             // Select the top performers
             int numberOfSurvivors = populationSize / 2;  // Keep top 25%
             Emmentaler[] survivors = SelectTopPerformers(emmentalers, fitnessScores, numberOfSurvivors / 2);
+
+            // gather median weights and biases
+            for (int i = 0; i < emmentalers[0].Weights.Length; i++)
+            {
+                weightMedians[i] = survivors.Select(x => x.Weights[i]).Select(x => x.OrderBy(x => x).ToArray()).Select(x => x[x.Length / 2]).ToArray();
+            }
+
+            for (int i = 0; i < emmentalers[0].Biases.Length; i++)
+            {
+                biasMedians[i] = survivors.Select(x => x.Biases[i]).Select(x => x.OrderBy(x => x).ToArray()).Select(x => x[x.Length / 2]).ToArray();
+            }
+
+
             // select another 25% randomly of the 75 remaining with higher probability for higher scores
             Random rnd = new Random();
 

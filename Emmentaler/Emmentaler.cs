@@ -269,6 +269,28 @@ namespace EmmentalerModel
                 float output = neuronOutputs[numLayers][i];
                 errors[numLayers][i] = (output - targets[i]) * output * (1 - output);
             }
+            float[][] newWeights = new float[Weights.Length][];
+            float[][] newBiases = new float[Biases.Length][];
+            for (int i = 0; i < Weights.Length; i++)
+            {
+                newWeights[i] = new float[Weights[i].Length];
+                // copy
+                for (int j = 0; j < Weights[i].Length; j++)
+                {
+                    newWeights[i][j] = Weights[i][j];
+                }
+            }
+
+            for (int i = 0; i < Biases.Length; i++)
+            {
+                newBiases[i] = new float[Biases[i].Length];
+                // copy
+                for (int j = 0; j < Biases[i].Length; j++)
+                {
+                    newBiases[i][j] = Biases[i][j];
+                }
+            }
+
 
             // Backpropagate the errors to compute gradients for each layer
             for (int layer = numLayers - 1; layer >= 0; layer--)
@@ -284,7 +306,7 @@ namespace EmmentalerModel
                     {
                         error += Weights[layer][k * prevLayerSize + j] * errors[layer + 1][k];
                         // Update weights
-                        Weights[layer][k * prevLayerSize + j] -= learningRate * errors[layer + 1][k] * neuronOutputs[layer][j];
+                        newWeights[layer][k * prevLayerSize + j] = Weights[layer][k * prevLayerSize + j] - learningRate * errors[layer + 1][k] * neuronOutputs[layer][j];
                     }
                     errors[layer][j] = error * neuronOutputs[layer][j] * (1 - neuronOutputs[layer][j]);
                 }
@@ -292,9 +314,12 @@ namespace EmmentalerModel
                 // Update biases for the current layer
                 for (int j = 0; j < currentLayerSize; j++)
                 {
-                    Biases[layer][j] -= learningRate * errors[layer + 1][j];
+                    newBiases[layer][j] = Biases[layer][j] - learningRate * errors[layer + 1][j];
                 }
             }
+
+            Weights = newWeights;
+            Biases = newBiases;
         }
 
         private float[][] ForwardPass(float[] inputs)

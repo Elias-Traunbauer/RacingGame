@@ -138,14 +138,30 @@ namespace RacingGameAIWithBoost
             var batch = GetTrainingBatch();
             var sampleBatch = batch.First().ToBytes();
             var bytes = batch.SelectMany(x => x.ToBytes()).ToArray();
-            byte[] res = new byte[sampleBatch.Length * batch.Length];
+            byte[] res = new byte[sampleBatch.Length * batch.Length + sizeof(int)];
+
+            BitConverter.GetBytes(batch.Length).CopyTo(res, 0);
 
             for (int i = 0; i < batch.Length; i++)
             {
-                Array.Copy(bytes, i * sampleBatch.Length, res, i * sampleBatch.Length, sampleBatch.Length);
+                Array.Copy(bytes, i * sampleBatch.Length, res, i * sampleBatch.Length + sizeof(int), sampleBatch.Length);
             }
 
             return res;
+        }
+
+        public static Experience[] LoadTrainingBatch(byte[] bytes)
+        {
+            int count = BitConverter.ToInt32(bytes, 0);
+            var sampleBatch = new Experience(bytes[4..]);
+            Experience[] batch = new Experience[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                batch[i] = new Experience(bytes[(i * sampleBatch.ToBytes().Length + sizeof(int))..]);
+            }
+
+            return batch;
         }
 
         public bool PreviousForwardControl { get; set; }
@@ -258,6 +274,12 @@ namespace RacingGameAIWithBoost
             };
 
             AddExperience(experience);
+
+            if (experience.Actions.Any(x => x != 0))
+            {
+                Console.WriteLine("State: " + string.Join(", ", State));
+                Console.WriteLine("Actions: " + string.Join(", ", experience.Actions));
+            }
 
             Lifetime++;
             Velocities.Enqueue(Velocity);

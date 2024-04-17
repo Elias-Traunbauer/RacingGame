@@ -71,6 +71,13 @@ namespace GameLogic
             public float[] State { get; set; }
             public float[] Actions { get; set; }
 
+            public Experience(byte[] bytes)
+            {
+                var experience = FromBytes(bytes);
+                State = experience.State;
+                Actions = experience.Actions;
+            }
+
             public byte[] ToBytes()
             {
                 byte[] result = new byte[
@@ -87,6 +94,12 @@ namespace GameLogic
                 offset += sizeof(int);
 
                 foreach (var item in State)
+                {
+                    BitConverter.GetBytes(item).CopyTo(result, offset);
+                    offset += sizeof(float);
+                }
+
+                foreach (var item in Actions)
                 {
                     BitConverter.GetBytes(item).CopyTo(result, offset);
                     offset += sizeof(float);

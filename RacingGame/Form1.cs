@@ -39,7 +39,8 @@ namespace RacingGame
             {
                 Running = false;
 
-                
+                File.WriteAllBytes("training.data", GameAgent.TrainingBatchToByte());
+                MessageBox.Show("Wrote training data");
             };
         }
 
@@ -312,7 +313,7 @@ namespace RacingGame
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            GameController.GenerateTrack(100, 0);
+            GameController.GenerateTrack(100, Random.Shared.Next());
 
             var thread = new Thread(Loop)
             {

@@ -1,5 +1,7 @@
 ﻿using EmmentalerModel;
+using GameLogic;
 using static GameLogic.IGameAgent;
+using RacingGameAIWithBoost;
 
 namespace EmmentalerTrainer
 {
@@ -8,12 +10,13 @@ namespace EmmentalerTrainer
         static void Main(string[] args)
         {
             float trainingRate = 0.01f;
-            float trainintIterations = 1000;
+            float trainintIterations = 3000;
 
-            float trainTestSplit = 0.8f;
+            float trainTestSplit = 0.9f;
 
             string pathToModel = Path.GetDirectoryName(Path.GetDirectoryName(Directory.GetCurrentDirectory()))[0..^3] + "model.emmentaler";
-            string pathToTrainingBatch = Path.GetDirectoryName(Path.GetDirectoryName(Directory.GetCurrentDirectory()))[0..^3] + "model.emmentaler";
+            string pathToTrainingBatch = Path.GetDirectoryName(Path.GetDirectoryName(Directory.GetCurrentDirectory()))[0..^3]/* + "training.data"*/;
+            string[] files = Directory.GetFiles(pathToTrainingBatch);
 
             Emmentaler emmentaler;
 
@@ -25,13 +28,31 @@ namespace EmmentalerTrainer
             }
             else
             {
-                emmentaler = new Emmentaler(21, 5, [40, 30, 20]);
+                emmentaler = new Emmentaler(21, 5, [30, 20]);
                 Console.WriteLine("Created emmentaler");
             }
 
             Console.WriteLine("Looking for training batch at \"" + pathToTrainingBatch + "\"");
 
-            Experience[] trainingBatch = new Experience[0];
+            Experience[] trainingBatch = [];
+            foreach (var item in files)
+            {
+                if (item.EndsWith(".data"))
+                {
+                    if (File.Exists(item))
+                    {
+                        trainingBatch = [..trainingBatch, ..RacingGameAIWithBoost.GameAgent.LoadTrainingBatch(File.ReadAllBytes(item))];
+                        Console.WriteLine("Loaded training batch " + item);
+                    }
+                    else
+                    {
+                        Console.WriteLine("No training batch found");
+                    }
+                }
+            }
+            int cntBefore = trainingBatch.Length;
+            trainingBatch = trainingBatch.Where(x => x.Actions.Any(y => y != 0)).ToArray();
+            Console.WriteLine("Removed " + (cntBefore - trainingBatch.Length) + " zero actions");
 
             // TODO: Load training batch
 
@@ -48,6 +69,7 @@ namespace EmmentalerTrainer
 
             for (int i = 0; i < trainintIterations; i++)
             {
+                Console.WriteLine("Iteration " + i + "/" + trainintIterations);
                 for (int j = 0; j < trainingData.Length; j++)
                 {
                     float[] state = trainingData[j].State;
@@ -55,6 +77,19 @@ namespace EmmentalerTrainer
 
                     emmentaler.Backpropagate(state, actions, trainingRate);
                 }
+                // loss update
+
+                float totalLosss = 0;
+                for (int j = 0; j < testData.Length; j++)
+                {
+                    float[] state = testData[j].State;
+                    float[] actions = testData[j].Actions;
+
+                    float loss = emmentaler.Loss(state, actions);
+                    totalLosss += loss;
+                }
+
+                Console.WriteLine("Average loss: " + totalLosss / testData.Length);
             }
 
             Console.WriteLine("Testing emmentaler");
