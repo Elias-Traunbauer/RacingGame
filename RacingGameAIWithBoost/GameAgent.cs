@@ -133,6 +133,21 @@ namespace RacingGameAIWithBoost
             return batch;
         }
 
+        public byte[] TrainingBatchToByte()
+        {
+            var batch = GetTrainingBatch();
+            var sampleBatch = batch.First().ToBytes();
+            var bytes = batch.SelectMany(x => x.ToBytes()).ToArray();
+            byte[] res = new byte[sampleBatch.Length * batch.Length];
+
+            for (int i = 0; i < batch.Length; i++)
+            {
+                Array.Copy(bytes, i * sampleBatch.Length, res, i * sampleBatch.Length, sampleBatch.Length);
+            }
+
+            return res;
+        }
+
         public bool PreviousForwardControl { get; set; }
         public bool PreviousBackwardControl { get; set; }
         public bool PreviousLeftControl { get; set; }

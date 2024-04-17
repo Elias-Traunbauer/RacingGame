@@ -398,8 +398,37 @@ namespace RacingGameAIWithBoost
             }
 
             // Select the top performers
-            int numberOfSurvivors = populationSize / 3;  // Keep top 30%
-            Emmentaler[] survivors = SelectTopPerformers(emmentalers, fitnessScores, numberOfSurvivors);
+            int numberOfSurvivors = populationSize / 2;  // Keep top 25%
+            Emmentaler[] survivors = SelectTopPerformers(emmentalers, fitnessScores, numberOfSurvivors / 2);
+            // select another 25% randomly of the 75 remaining with higher probability for higher scores
+            Random rnd = new Random();
+
+            for (int i = 0; i < numberOfSurvivors / 2; i++)
+            {
+                double[] probabilities = fitnessScores.Select(x => x / fitnessScores.Sum()).ToArray();
+                double[] cumulativeProbabilities = new double[probabilities.Length];
+                double sum = 0;
+                for (int j = 0; j < probabilities.Length; j++)
+                {
+                    sum += probabilities[j];
+                    cumulativeProbabilities[j] = sum;
+                }
+
+                double random = rnd.NextDouble();
+                int index = 0;
+                for (int j = 0; j < cumulativeProbabilities.Length; j++)
+                {
+                    if (random < cumulativeProbabilities[j])
+                    {
+                        index = j;
+                        break;
+                    }
+                }
+
+                survivors = [.. survivors, emmentalers[index]];
+            }
+
+            int wildlyRandom = (populationSize - survivors.Length) / 2;
 
             // Create a new generation
             for (int i = 0; i < populationSize; i++)
@@ -415,7 +444,14 @@ namespace RacingGameAIWithBoost
                     Emmentaler parent1 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     Emmentaler parent2 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     emmentalers[i] = Crossover(parent1, parent2);
-                    Mutate(emmentalers[i], 0.25f, 0.05f);
+                    if (i < wildlyRandom)
+                    {
+                        Mutate(emmentalers[i], 0.5f, 0.1f);
+                    }
+                    else
+                    {
+                        Mutate(emmentalers[i], 0.1f, 0.05f);
+                    }
                 }
             }
 
