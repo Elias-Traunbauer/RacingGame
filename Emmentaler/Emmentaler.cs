@@ -322,5 +322,16 @@ namespace EmmentalerModel
 
             return neuronOutputs;
         }
+
+        public float Loss(float[] state, float[] actions)
+        {
+            float[] predictions = Predict(state);
+            float loss = 0;
+            for (int i = 0; i < OutputNeuronCount; i++)
+            {
+                loss += (predictions[i] - actions[i]) * (predictions[i] - actions[i]);
+            }
+            return loss;
+        }
     }
 }
