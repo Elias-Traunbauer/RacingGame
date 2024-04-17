@@ -34,6 +34,13 @@ namespace RacingGame
             GameController.AddAgent(GameAgent);
 
             GameAgent.Restart();
+
+            this.FormClosing += (s, e) =>
+            {
+                Running = false;
+
+                
+            };
         }
 
         public /*async Task*/ void Render()

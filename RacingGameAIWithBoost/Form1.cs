@@ -377,7 +377,7 @@ namespace RacingGameAIWithBoost
                 agents[i] = new GameAgent(GameController);
                 if (!emmentalersLoaded)
                 {
-                    emmentalers[i] = new Emmentaler(21, 5, new int[] { 40, 30 }/*Enumerable.Repeat(4, 69).ToArray()*/);
+                    emmentalers[i] = new Emmentaler(21, 5, new int[] { 30, 20, 15 }/*Enumerable.Repeat(4, 69).ToArray()*/);
                 }
                 GameController.AddAgent(agents[i]);
             }

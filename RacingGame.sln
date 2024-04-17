@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmmentalerTests", "Emmental
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RacingGameAIWithBoost", "RacingGameAIWithBoost\RacingGameAIWithBoost.csproj", "{532C5A47-6308-4DA1-A6CF-C1CB68CE287A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmmentalerTrainer", "EmmentalerTrainer\EmmentalerTrainer.csproj", "{7F8729D2-BB25-459F-B9A4-26F5E442731E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{532C5A47-6308-4DA1-A6CF-C1CB68CE287A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{532C5A47-6308-4DA1-A6CF-C1CB68CE287A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{532C5A47-6308-4DA1-A6CF-C1CB68CE287A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F8729D2-BB25-459F-B9A4-26F5E442731E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F8729D2-BB25-459F-B9A4-26F5E442731E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F8729D2-BB25-459F-B9A4-26F5E442731E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F8729D2-BB25-459F-B9A4-26F5E442731E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
