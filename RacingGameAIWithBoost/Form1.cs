@@ -377,7 +377,7 @@ namespace RacingGameAIWithBoost
                 agents[i] = new GameAgent(GameController);
                 if (!emmentalersLoaded)
                 {
-                    emmentalers[i] = new Emmentaler(21, 5, new int[] { 30, 30 }/*Enumerable.Repeat(4, 69).ToArray()*/);
+                    emmentalers[i] = new Emmentaler(21, 5, new int[] { 40, 30 }/*Enumerable.Repeat(4, 69).ToArray()*/);
                 }
                 GameController.AddAgent(agents[i]);
             }
@@ -398,7 +398,7 @@ namespace RacingGameAIWithBoost
             }
 
             // Select the top performers
-            int numberOfSurvivors = populationSize / 2;  // Keep top 50%
+            int numberOfSurvivors = populationSize / 3;  // Keep top 30%
             Emmentaler[] survivors = SelectTopPerformers(emmentalers, fitnessScores, numberOfSurvivors);
 
             // Create a new generation
@@ -415,7 +415,7 @@ namespace RacingGameAIWithBoost
                     Emmentaler parent1 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     Emmentaler parent2 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     emmentalers[i] = Crossover(parent1, parent2);
-                    Mutate(emmentalers[i], 0.1f, 0.05f);
+                    Mutate(emmentalers[i], 0.25f, 0.05f);
                 }
             }
 
@@ -498,7 +498,7 @@ namespace RacingGameAIWithBoost
             InitializeAgents();
 
             Stopwatch w = new Stopwatch();
-            float speed = 0.2f;
+            float speed = 0.1f;
             while (Running)
             {
 
@@ -585,6 +585,19 @@ namespace RacingGameAIWithBoost
                 agent.LeftControl,
             ];
 
+            g.DrawString("Controls", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + 10));
+            g.DrawString("Vision", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + height * 0.7f));
+
+            if (agent is GameAgent ag)
+            {
+                g.DrawString($"Input counts", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + height * 0.7f + 20));
+                g.DrawString($"Forward: {ag.InputCounts[0]}", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + height * 0.7f + 40));
+                g.DrawString($"Backward: {ag.InputCounts[1]}", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + height * 0.7f + 60));
+                g.DrawString($"Left: {ag.InputCounts[2]}", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + height * 0.7f + 80));
+                g.DrawString($"Right: {ag.InputCounts[3]}", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + height * 0.7f + 100));
+                g.DrawString($"Boost: {ag.InputCounts[4]}", new Font("Arial", 12), Brushes.Black, new PointF(x + 10, y + height * 0.7f + 120));
+            }
+
             float controlsPortion = 0.3f;
 
             int controlY = (int)(height - height * controlsPortion);
@@ -653,9 +666,9 @@ namespace RacingGameAIWithBoost
                 }
                 angle += MathF.PI / 2;
             }
-            if (agent is GameAgent ag)
+            if (agent is GameAgent agg)
             {
-                if (ag.BoostControl)
+                if (agg.BoostControl)
                 {
                     g.FillRectangle(Brushes.Orange, new Rectangle(
                         width / 2 + x - 10,

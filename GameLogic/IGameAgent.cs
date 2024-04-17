@@ -40,7 +40,7 @@ namespace GameLogic
 
         public bool IsAlive { get; set; }
 
-        public void Reset();
+        public void Die();
 
         public void Restart();
 
@@ -70,8 +70,62 @@ namespace GameLogic
         {
             public float[] State { get; set; }
             public float[] Actions { get; set; }
-            public float Reward { get; set; }
-            public float[] NextState { get; set; }
+
+            public byte[] ToBytes()
+            {
+                byte[] result = new byte[
+                    sizeof(int) * 2 +
+                    sizeof(float) * (State.Length + Actions.Length)
+                    ];
+
+                int offset = 0;
+
+                BitConverter.GetBytes(State.Length).CopyTo(result, offset);
+                offset += sizeof(int);
+
+                BitConverter.GetBytes(Actions.Length).CopyTo(result, offset);
+                offset += sizeof(int);
+
+                foreach (var item in State)
+                {
+                    BitConverter.GetBytes(item).CopyTo(result, offset);
+                    offset += sizeof(float);
+                }
+
+                return result;
+            }
+
+            public static Experience FromBytes(byte[] bytes)
+            {
+                int offset = 0;
+
+                int stateLength = BitConverter.ToInt32(bytes, offset);
+                offset += sizeof(int);
+
+                int actionsLength = BitConverter.ToInt32(bytes, offset);
+                offset += sizeof(int);
+
+                float[] state = new float[stateLength];
+                float[] actions = new float[actionsLength];
+
+                for (int i = 0; i < stateLength; i++)
+                {
+                    state[i] = BitConverter.ToSingle(bytes, offset);
+                    offset += sizeof(float);
+                }
+
+                for (int i = 0; i < actionsLength; i++)
+                {
+                    actions[i] = BitConverter.ToSingle(bytes, offset);
+                    offset += sizeof(float);
+                }
+
+                return new Experience()
+                {
+                    State = state,
+                    Actions = actions,
+                };
+            }
         }
 
         public float GetReward();

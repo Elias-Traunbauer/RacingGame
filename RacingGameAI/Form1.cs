@@ -397,7 +397,7 @@ namespace RacingGameAI
                     Emmentaler parent1 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     Emmentaler parent2 = survivors[Random.Shared.Next(numberOfSurvivors)];
                     emmentalers[i] = Crossover(parent1, parent2);
-                    Mutate(emmentalers[i], 0.05f, 0.03f);
+                    Mutate(emmentalers[i], 0.1f, 0.05f);
                 }
             }
 
@@ -421,7 +421,7 @@ namespace RacingGameAI
                            .ToArray();
         }
 
-        private Emmentaler Crossover(Emmentaler parent1, Emmentaler parent2)
+        private Emmentaler CCrossover(Emmentaler parent1, Emmentaler parent2)
         {
             Emmentaler child = new Emmentaler(parent1.InputNeuronCount, parent1.OutputNeuronCount, parent1.HiddenNeuronCounts);
             Random rnd = new Random();
@@ -451,6 +451,35 @@ namespace RacingGameAI
                 }
             }
             return child;
+        }
+
+        private Emmentaler Crossover(Emmentaler parent1, Emmentaler parent2)
+        {
+            Emmentaler child = new Emmentaler(parent1.InputNeuronCount, parent1.OutputNeuronCount, parent1.HiddenNeuronCounts);
+            Random rnd = new Random();
+            float weightForCrossoverCombination = Remap((float)rnd.NextDouble(), 0, 1, 0.3f, 0.7f);
+
+            for (int i = 0; i < child.Weights.Length; i++)
+            {
+                float[] resultWeight = parent1.Weights[i].Select(x => x * weightForCrossoverCombination).ToArray();
+                float[] result2Weight = parent2.Weights[i].Select(x => x * (1 - weightForCrossoverCombination)).ToArray();
+
+                child.Weights[i] = resultWeight.Zip(result2Weight).Select((x) => (x.First + x.Second)).ToArray();
+            }
+
+            for (int i = 0; i < child.Biases.Length; i++)
+            {
+                float[] resultWeight = parent1.Biases[i].Select(x => x * weightForCrossoverCombination).ToArray();
+                float[] result2Weight = parent2.Biases[i].Select(x => x * (1 - weightForCrossoverCombination)).ToArray();
+
+                child.Biases[i] = resultWeight.Zip(result2Weight).Select((x) => (x.First + x.Second)).ToArray();
+            }
+            return child;
+        }
+
+        private float Remap(float value, int v2, int v3, float v4, float v5)
+        {
+            return Math.Clamp((value - v2) / (v3 - v2) * (v5 - v4) + v4, v4, v5);
         }
 
         private void Mutate(Emmentaler network, double mutationRate, double mutationStrength)

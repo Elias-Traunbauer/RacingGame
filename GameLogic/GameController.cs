@@ -15,7 +15,7 @@ namespace GameLogic
         public int TrackWidth { get; set; } = 180;
 
         public int TrackMaxDeltaX { get; set; } = 300;
-        public int TrackMaxDeltaY { get; set; } = 20;
+        public int TrackMaxDeltaY { get; set; } = 400;
 
         public void AddAgent(IGameAgent agent)
         {
@@ -109,19 +109,19 @@ namespace GameLogic
 
                 if (hitRight && distanceRight < minDistance)
                 {
-                    agent.Reset();
+                    agent.Die();
                     //GenerateTrack(100, Random.Shared.Next());
                 }
 
                 if (hitLeft && distanceLeft < minDistance)
                 {
-                    agent.Reset();
+                    agent.Die();
                     //GenerateTrack(100, Random.Shared.Next());
                 }
 
                 if (!hitLeft || !hitRight)
                 {
-                    agent.Reset();
+                    agent.Die();
                     //GenerateTrack(100, Random.Shared.Next());
                 }
             }
@@ -144,7 +144,7 @@ namespace GameLogic
                 int deltaY = (int)Math.Pow(
                     rnd.Next((int)Math.Sqrt(Math.Abs(deltaX)), Math.Max(TrackMaxDeltaY + 1, deltaX) + 1)
                     , 2);
-                deltaY = 400;
+                deltaY = TrackMaxDeltaY;
 
                 Vector2 newPoint = lastPoint + new Vector2(deltaX, deltaY);
 

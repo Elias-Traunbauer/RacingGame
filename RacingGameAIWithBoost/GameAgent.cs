@@ -58,7 +58,9 @@ namespace RacingGameAIWithBoost
 
         public bool IsAlive { get; set; } = true;
 
-        public void Reset()
+        public int[] InputCounts { get; set; } = new int[] { 0, 0, 0, 0, 0 };
+
+        public void Die()
         {
             FinalScore = GetReward();
             Distance = Position.Y;
@@ -78,7 +80,14 @@ namespace RacingGameAIWithBoost
             Velocities.Clear();
             CurrentBoost = 10;
 
-            Rotation = (float)((MaxSteeringAngle / 2) - Random.Shared.NextDouble() * 2 * (MaxSteeringAngle / 2));
+            InputCounts = new int[] { 0, 0, 0, 0, 0 };
+
+            //Rotation = (float)((MaxSteeringAngle / 2) - Random.Shared.NextDouble() * 2 * (MaxSteeringAngle / 2));
+            PreviousForwardControl = false;
+            PreviousBackwardControl = false;
+            PreviousLeftControl = false;
+            PreviousRightControl = false;
+            PreviousBoostControl = false;
 
             Position = StartPosition + new Vector2(Random.Shared.Next(0, GameController.TrackWidth / 2), 0);
         }
@@ -124,13 +133,37 @@ namespace RacingGameAIWithBoost
             return batch;
         }
 
+        public bool PreviousForwardControl { get; set; }
+        public bool PreviousBackwardControl { get; set; }
+        public bool PreviousLeftControl { get; set; }
+        public bool PreviousRightControl { get; set; }
+        public bool PreviousBoostControl { get; set; }
+
         public float GetReward()
         {
             float reward = 0;
-            //reward += Velocity.Y / MaxSpeed;
-            //reward -= (float)Math.Sin(Rotation);
-            //reward -= IsAlive ? 0 : 1 * 10;
-            reward += (Position.Y / GameController.TrackLength) * 4 + (Velocities.Count != 0 ? Velocities.Average(x => x.Y) * 5 : 0);
+
+            if (InputCounts.Any(count => count == 0))
+            {
+                reward *= 0.5f; // Apply penalty less drastically
+            }
+
+            // Reward for progress and maintaining speed
+            reward += (Position.Y / (GameController.TrackLength * GameController.TrackMaxDeltaY));
+            float avgSpeed = Velocities.Count != 0 ? Velocities.Average(v => v.Length()) : 0;
+            reward += avgSpeed / (MaxSpeed * 2);
+
+            // Encourage using all inputs effectively
+            float inputUsageReward = 0;
+            foreach (int count in InputCounts)
+            {
+                inputUsageReward += (Math.Clamp(count, 0, 100) / 100.0f);
+            }
+            inputUsageReward = inputUsageReward / InputCounts.Length; // Normalize by number of inputs
+
+            // Adjust reward calculations
+            reward += reward * inputUsageReward * 1.3f; // Scaled importance of input usage
+
             return reward;
         }
 
@@ -203,6 +236,14 @@ namespace RacingGameAIWithBoost
                 State[index++] = hit ? distance / maxDistance : 1;
             }
 
+            Experience experience = new Experience
+            {
+                State = State,
+                Actions = new float[] { ForwardControl ? 1 : 0, BackwardControl ? 1 : 0, LeftControl ? 1 : 0, RightControl ? 1 : 0, BoostControl ? 1 : 0 }
+            };
+
+            AddExperience(experience);
+
             Lifetime++;
             Velocities.Enqueue(Velocity);
             Speeds.Enqueue(Velocity.Y);
@@ -213,6 +254,33 @@ namespace RacingGameAIWithBoost
             }
 
             AverageSpeeds.Enqueue(Speeds.Average());
+
+            if (ForwardControl && !PreviousForwardControl)
+            {
+                InputCounts[0]++;
+            }
+            if (BackwardControl && !PreviousBackwardControl)
+            {
+                InputCounts[1]++;
+            }
+            if (LeftControl && !PreviousLeftControl)
+            {
+                InputCounts[2]++;
+            }
+            if (RightControl && !PreviousRightControl)
+            {
+                InputCounts[3]++;
+            }
+            if (BoostControl && !PreviousBoostControl)
+            {
+                InputCounts[4]++;
+            }
+
+            PreviousLeftControl = LeftControl;
+            PreviousRightControl = RightControl;
+            PreviousForwardControl = ForwardControl;
+            PreviousBackwardControl = BackwardControl;
+            PreviousBoostControl = BoostControl;
         }
 
         public static float RadToDeg(float rad)

@@ -52,7 +52,7 @@ namespace GameLogic
 
         public bool IsAlive { get; set; } = true;
 
-        public void Reset()
+        public void Die()
         {
             FinalScore = GetReward();
             Distance = Position.Y;
@@ -115,6 +115,21 @@ namespace GameLogic
             var batch = Experiences.ToArray();
             Experiences.Clear();
             return batch;
+        }
+
+        public byte[] TrainingBatchToByte()
+        {
+            var batch = GetTrainingBatch();
+            var sampleBatch = batch.First().ToBytes();
+            var bytes = batch.SelectMany(x => x.ToBytes()).ToArray();
+            byte[] res = new byte[sampleBatch.Length * batch.Length];
+
+            for (int i = 0; i < batch.Length; i++)
+            {
+                Array.Copy(bytes, i * sampleBatch.Length, res, i * sampleBatch.Length, sampleBatch.Length);
+            }
+
+            return res;
         }
 
         public float GetReward()

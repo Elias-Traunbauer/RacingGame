@@ -62,7 +62,7 @@ namespace EmmentalerModel
             Weights[0] = new float[InputNeuronCount * HiddenNeuronCounts[0]];
             for (int i = 0; i < Weights[0].Length; i++)
             {
-                Weights[0][i] = (float)(Random.Shared.NextDouble() * 2 - 1) / 10f;
+                Weights[0][i] = (float)(Random.Shared.NextDouble() * 2 - 1) / 5f;
             }
 
             // Initialize the weights for the hidden layers
@@ -71,7 +71,7 @@ namespace EmmentalerModel
                 Weights[i] = new float[HiddenNeuronCounts[i] * HiddenNeuronCounts[i - 1]];
                 for (int j = 0; j < Weights[i].Length; j++)
                 {
-                    Weights[i][j] = (float)(Random.Shared.NextDouble() * 2 - 1) / 10f;
+                    Weights[i][j] = (float)(Random.Shared.NextDouble() * 2 - 1) / 5f;
                 }
             }
 
@@ -79,7 +79,7 @@ namespace EmmentalerModel
             Weights[^1] = new float[HiddenNeuronCounts[^1] * OutputNeuronCount];
             for (int i = 0; i < Weights[^1].Length; i++)
             {
-                Weights[^1][i] = (float)(Random.Shared.NextDouble() * 2 - 1) / 10f;
+                Weights[^1][i] = (float)(Random.Shared.NextDouble() * 2 - 1) / 5f;
             }
 
             // Initialize the biases
