@@ -513,10 +513,11 @@ namespace RacingGameAI
             public int start;
             public int cnt;
         }
-
+        public bool DoRender { get; set;}
+        public bool Realtime { get; set; }
         public void Loop()
         {
-            GameController.TrackMaxDeltaX = 150;
+            GameController.TrackMaxDeltaX = 250;
             GameController.GenerateTrack(100, Random.Shared.Next());
             bool soloRun = false;
             bool first = true;
@@ -583,7 +584,7 @@ namespace RacingGameAI
                 float deltaTime = (float)w.Elapsed.TotalSeconds;
                 w.Restart();
 
-                GameController.Update(/*(float)w.Elapsed.TotalSeconds*/speed);
+                GameController.Update(/*(float)w.Elapsed.TotalSeconds*/Realtime ? deltaTime : speed);
                 // lerp camera
                 var followAgent = agents.Where(x => x.IsAlive).Any() ? agents.Where(x => x.IsAlive).OrderByDescending(x => x.Position.Y).First() : null;
                 CameraPosition = Vector2.Lerp(CameraPosition, followAgent?.Position ?? new Vector2(0, 0), speed * 2);
@@ -626,10 +627,13 @@ namespace RacingGameAI
 
                 try
                 {
-                    renderSemaphore.WaitOne();
-                    Render();
-                    renderSemaphore.WaitOne();
-                    renderSemaphore.Release();
+                    if (DoRender)
+                    {
+                        renderSemaphore.WaitOne();
+                        Render();
+                        renderSemaphore.WaitOne();
+                        renderSemaphore.Release();
+                    }
                 }
                 catch (ObjectDisposedException)
                 {
@@ -1015,7 +1019,15 @@ namespace RacingGameAI
 
         private void Form1_KeyUp(object? sender, KeyEventArgs e)
         {
+            if (e.KeyCode == Keys.Space)
+            {
+                DoRender = !DoRender;
+            }
 
+            if (e.KeyCode == Keys.R)
+            {
+                Realtime = !Realtime;
+            }
         }
     }
 }

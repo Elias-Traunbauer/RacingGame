@@ -1,5 +1,12 @@
 ﻿
+using System;
 using System.Diagnostics.CodeAnalysis;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Net;
+using System.Reflection.Emit;
+using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace EmmentalerModel
 {
@@ -251,85 +258,64 @@ namespace EmmentalerModel
                     offset += sizeof(float);
                 }
             }
-
             return emmentaler;
+        }
+
+        float DerivativeSigmoid(float x)
+        {
+            return x * (1 - x);
         }
 
         public void Backpropagate(float[] inputs, float[] targets, float learningRate)
         {
             // First, run the forward pass and store all neuron outputs
-            float[][] neuronOutputs = ForwardPass(inputs);
+            float[][] forwardpassNeurons = ForwardPass(inputs);
 
-            // Calculate output errors for the last layer
-            int numLayers = HiddenNeuronCounts.Length + 1;
-            float[][] errors = new float[numLayers + 1][];
-            errors[numLayers] = new float[OutputNeuronCount];
-            for (int i = 0; i < OutputNeuronCount; i++)
+            // Calculate the output layer error
+            float[][] outputErrors = new float[OutputNeuronCount][];
+
+            for (int outputNeuronIndex = 0; outputNeuronIndex < OutputNeuronCount; outputNeuronIndex++)
             {
-                float output = neuronOutputs[numLayers][i];
-                errors[numLayers][i] = (output - targets[i]) * output * (1 - output);
-            }
-            // correct until here
-            float[][] newWeights = new float[Weights.Length][];
-            float[][] newBiases = new float[Biases.Length][];
-            for (int i = 0; i < Weights.Length; i++)
-            {
-                newWeights[i] = new float[Weights[i].Length];
-                // copy
-                for (int j = 0; j < Weights[i].Length; j++)
-                {
-                    newWeights[i][j] = Weights[i][j];
-                }
+                outputErrors[^1] = new float[OutputNeuronCount];
+                outputErrors[^1][outputNeuronIndex] = (targets[outputNeuronIndex] - forwardpassNeurons[^1][outputNeuronIndex]) * DerivativeSigmoid(forwardpassNeurons[^1][outputNeuronIndex]);
             }
 
-            for (int i = 0; i < Biases.Length; i++)
+            for (int sourceLayerIndexJ = 1; sourceLayerIndexJ < HiddenNeuronCounts.Length + 1; sourceLayerIndexJ++)
             {
-                newBiases[i] = new float[Biases[i].Length];
-                // copy
-                for (int j = 0; j < Biases[i].Length; j++)
-                {
-                    newBiases[i][j] = Biases[i][j];
-                }
-            }
+                var currentLayer = forwardpassNeurons[^sourceLayerIndexJ];
+                var nextLayer = forwardpassNeurons[^(sourceLayerIndexJ + 1)];
 
-            // Calculate errors for the hidden layers
-            for (int layer = numLayers - 1; layer >= 0; layer--)
-            {
-                int layerSizeOfNextLayer = layer == numLayers - 1 ? OutputNeuronCount : HiddenNeuronCounts[layer];
-                int layerSize = layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1];
-
-                errors[layer] = new float[layerSize];
-                
-                for (int nextNeuron = 0; nextNeuron < layerSizeOfNextLayer; nextNeuron++)
+                for (int currentLayerNeuron = 0; currentLayerNeuron < currentLayer.Length; currentLayerNeuron++)
                 {
-                    float sum = 0;
-                    for (int neuron = 0; neuron < layerSize; neuron++)
+                    outputErrors[^sourceLayerIndexJ] = new float[currentLayer.Length];
+
+                    float error = 0;
+                    for (int nextLayerNeuron = 0; nextLayerNeuron < nextLayer.Length; nextLayerNeuron++)
                     {
-                        sum += errors[layer + 1][nextNeuron] * Weights[layer][nextNeuron * layerSize + neuron];
+                        error += Weights[^sourceLayerIndexJ][nextLayerNeuron * currentLayer.Length + currentLayerNeuron] * outputErrors[^sourceLayerIndexJ][currentLayerNeuron];
                     }
-                    for (int neuron = 0; neuron < layerSize; neuron++)
-                    {
-                        errors[layer][neuron] = sum * neuronOutputs[layer + 1][nextNeuron] * (1 - neuronOutputs[layer + 1][nextNeuron]);
-                    }
+                    outputErrors[^sourceLayerIndexJ][currentLayerNeuron] = error * DerivativeSigmoid(currentLayer[currentLayerNeuron]);
                 }
             }
 
-            // Update the weights
-
-            for (int layer = 0; layer < numLayers; layer++)
+            for (int layer = 0; layer < HiddenNeuronCounts.Length + 1; layer++)
             {
-                for (int neuron = 0; neuron < (layer == numLayers - 1 ? OutputNeuronCount : HiddenNeuronCounts[layer]); neuron++)
+                for (int neuron = 0; neuron < Biases[layer].Length; neuron++)
+                {
+                    Biases[layer][neuron] += outputErrors[layer][neuron] * learningRate;
+                }
+            }
+
+            for (int layer = 0; layer < HiddenNeuronCounts.Length + 1; layer++)
+            {
+                for (int neuron = 0; neuron < Biases[layer].Length; neuron++)
                 {
                     for (int prevNeuron = 0; prevNeuron < (layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1]); prevNeuron++)
                     {
-                        newWeights[layer][neuron * (layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1]) + prevNeuron] -= learningRate * errors[layer][neuron] * neuronOutputs[layer][prevNeuron];
+                        Weights[layer][neuron * (layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1]) + prevNeuron] += outputErrors[layer][neuron] * forwardpassNeurons[layer][prevNeuron] * learningRate;
                     }
-                    newBiases[layer][neuron] -= learningRate * errors[layer][neuron];
                 }
             }
-
-            Weights = newWeights;
-            Biases = newBiases;
         }
 
         private float[][] ForwardPass(float[] inputs)

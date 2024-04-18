@@ -174,11 +174,6 @@ namespace RacingGameAIWithBoost
         {
             float reward = 0;
 
-            if (InputCounts.Any(count => count == 0))
-            {
-                reward *= 0.5f; // Apply penalty less drastically
-            }
-
             // Reward for progress and maintaining speed
             reward += (Position.Y / (GameController.TrackLength * GameController.TrackMaxDeltaY));
             float avgSpeed = Velocities.Count != 0 ? Velocities.Average(v => v.Length()) : 0;
@@ -194,6 +189,11 @@ namespace RacingGameAIWithBoost
 
             // Adjust reward calculations
             reward += reward * inputUsageReward * 1.3f; // Scaled importance of input usage
+
+            if (InputCounts.Any(count => count == 0))
+            {
+                reward *= 0.5f; // Apply penalty less drastically
+            }
 
             return reward;
         }
