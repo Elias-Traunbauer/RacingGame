@@ -48,7 +48,7 @@ namespace GameLogic
         public float Acceleration { get; set; } = 70f;
         public float SteeringSpeed { get; set; } = 1f;
 
-        public float[] State { get; set; } = new float[15 + 2 + 2 + 1];
+        public float[] State { get; set; } = new float[15 + 2 /*+ 2*/ + 1];
 
         public bool IsAlive { get; set; } = true;
 
@@ -154,16 +154,14 @@ namespace GameLogic
 
             State[index++] = Velocity.Length() / MaxSpeed;
 
-            State[index++] = (float)Math.Sin(rotationInRad);
-            State[index++] = (float)Math.Sin(rotationInRad);
+            float steeringRight = steeringAngleInRad > 0 ? steeringAngleInRad / MaxSteeringAngle : 0;
+            float steeringLeft = steeringAngleInRad < 0 ? -steeringAngleInRad / MaxSteeringAngle : 0;
+
+            State[index++] = steeringRight;
+            State[index++] = steeringLeft;
 
             float minSteeringRad = -MaxSteeringAngle;
             float maxSteeringRad = MaxSteeringAngle;
-
-            float steeringAngleNormalized = (steeringAngleInRad - minSteeringRad) / (maxSteeringRad - minSteeringRad);
-
-            State[index++] = steeringAngleNormalized;
-            State[index++] = 0;
 
             Vector2 agentDirection = new((float)Math.Cos(Rotation), (float)Math.Sin(Rotation));
             agentDirection = new Vector2(agentDirection.Y, agentDirection.X);

@@ -41,7 +41,7 @@ namespace GameLogic
         {
             rays.Clear();
             float minDistance = 10;
-            foreach (IGameAgent agent in Agents)
+            Parallel.ForEach(Agents, agent =>
             {
                 agent.Update(deltaTime);
 
@@ -90,12 +90,15 @@ namespace GameLogic
 
                 if (agent.IsAlive)
                 {
-                    //foreach (var item in rayDirections)
-                    //{
-                    //    bool hit = Raycast(agentFront, item, out float distance);
+                    foreach (var item in rayDirections)
+                    {
+                        bool hit = Raycast(agentFront, item, out float distance);
 
-                    //    rays.Add((agentFront, agentFront + item * distance));
-                    //}
+                        lock(rays)
+                        {
+                            rays.Add((agentFront, agentFront + item * distance));
+                        }
+                    }
                 }
 
                 bool hitRight = Raycast(agentFront, agentDirectionNormal, out float distanceRight);
@@ -124,6 +127,10 @@ namespace GameLogic
                     agent.Die();
                     //GenerateTrack(100, Random.Shared.Next());
                 }
+            });
+            foreach (IGameAgent agent in Agents)
+            {
+                
             }
         }
 

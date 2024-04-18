@@ -269,6 +269,7 @@ namespace EmmentalerModel
                 float output = neuronOutputs[numLayers][i];
                 errors[numLayers][i] = (output - targets[i]) * output * (1 - output);
             }
+            // correct until here
             float[][] newWeights = new float[Weights.Length][];
             float[][] newBiases = new float[Biases.Length][];
             for (int i = 0; i < Weights.Length; i++)
@@ -291,30 +292,39 @@ namespace EmmentalerModel
                 }
             }
 
-
-            // Backpropagate the errors to compute gradients for each layer
+            // Calculate errors for the hidden layers
             for (int layer = numLayers - 1; layer >= 0; layer--)
             {
-                int currentLayerSize = layer == numLayers - 1 ? OutputNeuronCount : HiddenNeuronCounts[layer];
-                int prevLayerSize = layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1];
-                errors[layer] = new float[prevLayerSize];
+                int layerSizeOfNextLayer = layer == numLayers - 1 ? OutputNeuronCount : HiddenNeuronCounts[layer];
+                int layerSize = layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1];
 
-                for (int j = 0; j < prevLayerSize; j++)
+                errors[layer] = new float[layerSize];
+                
+                for (int nextNeuron = 0; nextNeuron < layerSizeOfNextLayer; nextNeuron++)
                 {
-                    float error = 0;
-                    for (int k = 0; k < currentLayerSize; k++)
+                    float sum = 0;
+                    for (int neuron = 0; neuron < layerSize; neuron++)
                     {
-                        error += Weights[layer][k * prevLayerSize + j] * errors[layer + 1][k];
-                        // Update weights
-                        newWeights[layer][k * prevLayerSize + j] = Weights[layer][k * prevLayerSize + j] - learningRate * errors[layer + 1][k] * neuronOutputs[layer][j];
+                        sum += errors[layer + 1][nextNeuron] * Weights[layer][nextNeuron * layerSize + neuron];
                     }
-                    errors[layer][j] = error * neuronOutputs[layer][j] * (1 - neuronOutputs[layer][j]);
+                    for (int neuron = 0; neuron < layerSize; neuron++)
+                    {
+                        errors[layer][neuron] = sum * neuronOutputs[layer + 1][nextNeuron] * (1 - neuronOutputs[layer + 1][nextNeuron]);
+                    }
                 }
+            }
 
-                // Update biases for the current layer
-                for (int j = 0; j < currentLayerSize; j++)
+            // Update the weights
+
+            for (int layer = 0; layer < numLayers; layer++)
+            {
+                for (int neuron = 0; neuron < (layer == numLayers - 1 ? OutputNeuronCount : HiddenNeuronCounts[layer]); neuron++)
                 {
-                    newBiases[layer][j] = Biases[layer][j] - learningRate * errors[layer + 1][j];
+                    for (int prevNeuron = 0; prevNeuron < (layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1]); prevNeuron++)
+                    {
+                        newWeights[layer][neuron * (layer == 0 ? InputNeuronCount : HiddenNeuronCounts[layer - 1]) + prevNeuron] -= learningRate * errors[layer][neuron] * neuronOutputs[layer][prevNeuron];
+                    }
+                    newBiases[layer][neuron] -= learningRate * errors[layer][neuron];
                 }
             }
 

@@ -359,7 +359,7 @@ namespace RacingGameAI
                 agents[i] = new GameAgent(GameController);
                 if (!emmentalersLoaded)
                 {
-                    emmentalers[i] = new Emmentaler(20, 4, new int[] { 30, 30 });
+                    emmentalers[i] = new Emmentaler(18, 4, new int[] { 15 });
                 }
                 GameController.AddAgent(agents[i]);
             }
@@ -457,7 +457,7 @@ namespace RacingGameAI
         {
             Emmentaler child = new Emmentaler(parent1.InputNeuronCount, parent1.OutputNeuronCount, parent1.HiddenNeuronCounts);
             Random rnd = new Random();
-            float weightForCrossoverCombination = Remap((float)rnd.NextDouble(), 0, 1, 0.3f, 0.7f);
+            float weightForCrossoverCombination = Remap((float)rnd.NextDouble(), 0, 1, 0.2f, 0.8f);
 
             for (int i = 0; i < child.Weights.Length; i++)
             {
@@ -508,21 +508,85 @@ namespace RacingGameAI
             }
         }
 
+        struct ThreadParams
+        {
+            public int start;
+            public int cnt;
+        }
+
         public void Loop()
         {
+            GameController.TrackMaxDeltaX = 150;
+            GameController.GenerateTrack(100, Random.Shared.Next());
+            bool soloRun = false;
+            bool first = true;
             InitializeAgents();
+            int actionCnt = 0;
+
+            double maxThreads = 6;
+            int agentsPerThread = (int)Math.Ceiling(agents.Length / maxThreads);
+
+            CountdownEvent cntDown = new CountdownEvent((int)maxThreads);
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+            Barrier barrier = new Barrier((int)maxThreads + 1);
+
+            void Process(object? obj)
+            {
+                if (obj is not ThreadParams threadParams)
+                {
+                    return;
+                }
+
+                while (Running)
+                {
+                    manualResetEvent.WaitOne();
+                    // query the neural network
+                    int i = threadParams.start;
+                    for (int j = 0; j < threadParams.cnt; j++)
+                    {
+                        if (i + j >= agents.Length)
+                        {
+                            continue;
+                        }
+                        if (agents[i + j].IsAlive == false)
+                        {
+                            continue;
+                        }
+
+                        var res = emmentalers[i + j].Predict(agents[i + j].State);
+                        if (res != null)
+                        {
+                            agents[i + j].ForwardControl = res[0] > 0.5;
+                            agents[i + j].BackwardControl = res[1] > 0.5;
+                            agents[i + j].LeftControl = res[2] > 0.5;
+                            agents[i + j].RightControl = res[3] > 0.5;
+                        }
+                        Interlocked.Add(ref actionCnt, 1);
+                    }
+                    cntDown.Signal();
+                    barrier.SignalAndWait();
+                }
+            }
+
+            for (int i = 0; i < maxThreads; i++)
+            {
+                Thread t = new Thread(Process);
+                t.IsBackground = true;
+                t.Start(new ThreadParams { start = i * agentsPerThread, cnt = agentsPerThread });
+            }
 
             Stopwatch w = new Stopwatch();
             float speed = 0.1f;
             while (Running)
             {
-
                 w.Stop();
-                GameController.Update(/*(float)w.Elapsed.TotalSeconds*/speed);
+                float deltaTime = (float)w.Elapsed.TotalSeconds;
                 w.Restart();
+
+                GameController.Update(/*(float)w.Elapsed.TotalSeconds*/speed);
                 // lerp camera
                 var followAgent = agents.Where(x => x.IsAlive).Any() ? agents.Where(x => x.IsAlive).OrderByDescending(x => x.Position.Y).First() : null;
-                CameraPosition = Vector2.Lerp(CameraPosition, followAgent?.Position ?? new Vector2(0, 0), speed);
+                CameraPosition = Vector2.Lerp(CameraPosition, followAgent?.Position ?? new Vector2(0, 0), speed * 2);
 
                 //// update the neural network
                 //var res = emmentaler.Predict(GameAgent.State);
@@ -532,22 +596,29 @@ namespace RacingGameAI
                 //GameAgent.BackwardControl = res[1] > 0.5;
                 //GameAgent.LeftControl = res[2] > 0.5;
                 //GameAgent.RightControl = res[3] > 0.5;
-                void Process(object obj)
-                {
-                    int i = (int)obj;
-                    if (agents[i].IsAlive == false)
-                    {
-                        return;
-                    }
-                    var res = emmentalers[i].Predict(agents[i].State);
 
-                    agents[i].ForwardControl = res[0] > 0.5;
-                    agents[i].BackwardControl = res[1] > 0.5;
-                    agents[i].LeftControl = res[2] > 0.5;
-                    agents[i].RightControl = res[3] > 0.5;
-                }
+                //void ProcessN(object obj)
+                //{
+                //    int i = (int)obj;
+                //    if (agents[i].IsAlive == false)
+                //    {
+                //        return;
+                //    }
+                //    var res = emmentalers[i].Predict(agents[i].State);
 
-                Parallel.For(0, agents.Length, (i) => Process(i));
+                //    agents[i].ForwardControl = res[0] > 0.5;
+                //    agents[i].BackwardControl = res[1] > 0.5;
+                //    agents[i].LeftControl = res[2] > 0.5;
+                //    agents[i].RightControl = res[3] > 0.5;
+                //}
+                manualResetEvent.Set();
+                cntDown.Wait();
+                manualResetEvent.Reset();
+                cntDown.Reset();
+                barrier.SignalAndWait();
+
+                var d = actionCnt;
+                //Parallel.For(0, agents.Length, (i) => Process(i));
                 //for (int i = 0; i < agents.Length; i++)
                 //{
                 //    Process(i);
@@ -582,15 +653,31 @@ namespace RacingGameAI
                     {
 
                     }
-                    Evolution();
-                }
+                    if (first || !soloRun)
+                        Evolution();
 
+                    if (soloRun && first)
+                    {
+                        agents[0].Restart();
+                        var topAgent = SelectTopPerformers(emmentalers, agents.Select(x => (double)x.FinalScore).ToArray(), 1).First();
+                        int topAgentIndex = emmentalers.ToList().IndexOf(topAgent);
+                        agents = new GameAgent[] { agents[topAgentIndex] };
+                        emmentalers = new Emmentaler[] { emmentalers[topAgentIndex] };
+                        agents[0].Restart();
+                    }
+                    else if (soloRun)
+                    {
+                        agents[0].Restart();
+                    }
+
+                    first = false;
+                }
             }
         }
 
         private void VisualizeVisionOfAgent(Graphics g, IGameAgent agent, int x, int y, int width, int height)
         {
-            float[] visionRays = agent.State[5..];
+            float[] visionRays = agent.State[3..];
 
             bool[] controls = [
                 agent.ForwardControl,
@@ -719,7 +806,7 @@ namespace RacingGameAI
             Vector2 multiplier = new Vector2(1, -1);
             var pos = new Vector2(x + width * 0.8f, y + controlY + controlHeight / 2);
 
-            Vector2 forward = new((float)Math.Cos(agent.Rotation), (float)Math.Sin(agent.Rotation));
+            Vector2 forward = new((float)Math.Cos(0), (float)Math.Sin(0));
             forward = new Vector2(forward.Y, forward.X);
 
             var frontCarPos = pos;
@@ -737,7 +824,7 @@ namespace RacingGameAI
 
             int carWidth = 20;
             int carHeight = (int)(agent.FrontCarPosition.Length() * 2);
-            Matrix3x2 rotationMatrix = Matrix3x2.CreateRotation(agent.Rotation);
+            Matrix3x2 rotationMatrix = Matrix3x2.CreateRotation(0);
             Vector2[] carPoints = new Vector2[]
             {
                         new(-carWidth / 2, -carHeight / 2),

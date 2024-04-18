@@ -10,7 +10,7 @@ namespace EmmentalerTrainer
         static void Main(string[] args)
         {
             float trainingRate = 0.01f;
-            float trainintIterations = 3000;
+            float trainintIterations = 1000;
 
             float trainTestSplit = 0.9f;
 
@@ -28,7 +28,7 @@ namespace EmmentalerTrainer
             }
             else
             {
-                emmentaler = new Emmentaler(21, 5, [30, 20]);
+                emmentaler = new Emmentaler(21, 5, [35, 25]);
                 Console.WriteLine("Created emmentaler");
             }
 
