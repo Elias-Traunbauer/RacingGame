@@ -24,6 +24,11 @@ namespace GameLogic
             GameController = gameController;
         }
 
+        public override string? ToString()
+        {
+            return "Pos: " + Position + " Vel: " + Velocity + " Rot: " + Rotation + " Steer: " + SteeringAngle;
+        }
+
         public Color Color { get; set; } = Color.Red;
 
         public GameController GameController { get; set; }
@@ -203,7 +208,7 @@ namespace GameLogic
             ];
 
             float maxDistance = GameController.TrackWidth * 2;
-
+            
             foreach (var item in rayDirections)
             {
                 var hit = GameController.Raycast(agentFront, item, out float distance);
@@ -275,14 +280,14 @@ namespace GameLogic
 
             if (!LeftControl && !RightControl)
             {
-                if (SteeringAngle > 0)
-                {
-                    SteeringAngle -= SteeringSpeed * deltaTime;
-                }
-                if (SteeringAngle < 0)
-                {
-                    SteeringAngle += SteeringSpeed * deltaTime;
-                }
+                //if (SteeringAngle > 0)
+                //{
+                //    SteeringAngle -= SteeringSpeed * deltaTime;
+                //}
+                //if (SteeringAngle < 0)
+                //{
+                //    SteeringAngle += SteeringSpeed * deltaTime;
+                //}
 
                 if (Math.Abs(SteeringAngle) < SteeringSpeed * deltaTime)
                 {
@@ -344,11 +349,6 @@ namespace GameLogic
         public override bool Equals(object? obj)
         {
             return obj is GameAgent agent && Id == agent.Id;
-        }
-
-        public override string ToString()
-        {
-            return Id.ToString();
         }
     }
 }

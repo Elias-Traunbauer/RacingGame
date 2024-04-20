@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\source\repos\Elias-Traunbauer\ClosedGL\ClosedGL\ClosedGL.csproj" />
+    <ProjectReference Include="..\Emmentaler\Emmentaler.csproj" />
+    <ProjectReference Include="..\GameLogic\GameLogic.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content  Include="Textures\**" >
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content >
+  </ItemGroup>
+
+</Project>

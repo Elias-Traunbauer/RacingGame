@@ -17,6 +17,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RacingGameAIWithBoost", "Ra
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmmentalerTrainer", "EmmentalerTrainer\EmmentalerTrainer.csproj", "{7F8729D2-BB25-459F-B9A4-26F5E442731E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RacingGameAI3D", "RacingGameAI3D\RacingGameAI3D.csproj", "{522F3A41-3ADA-4528-B168-706CD1AC4B59}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClosedGL", "..\..\source\repos\Elias-Traunbauer\ClosedGL\ClosedGL\ClosedGL.csproj", "{A84D31DF-E099-4EAC-96B2-18BDFA1B9AC1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +55,14 @@ Global
 		{7F8729D2-BB25-459F-B9A4-26F5E442731E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F8729D2-BB25-459F-B9A4-26F5E442731E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F8729D2-BB25-459F-B9A4-26F5E442731E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{522F3A41-3ADA-4528-B168-706CD1AC4B59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{522F3A41-3ADA-4528-B168-706CD1AC4B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{522F3A41-3ADA-4528-B168-706CD1AC4B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{522F3A41-3ADA-4528-B168-706CD1AC4B59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A84D31DF-E099-4EAC-96B2-18BDFA1B9AC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A84D31DF-E099-4EAC-96B2-18BDFA1B9AC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A84D31DF-E099-4EAC-96B2-18BDFA1B9AC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A84D31DF-E099-4EAC-96B2-18BDFA1B9AC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

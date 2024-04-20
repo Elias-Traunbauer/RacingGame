@@ -518,6 +518,7 @@ namespace RacingGameAI
         public void Loop()
         {
             GameController.TrackMaxDeltaX = 250;
+            GameController.TrackWidth = 150;
             GameController.GenerateTrack(100, Random.Shared.Next());
             bool soloRun = false;
             bool first = true;
